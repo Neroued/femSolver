@@ -1,10 +1,10 @@
-#include <Tarray.h>
+#include <TArray.h>
 #include <iostream>
 
 int main()
 {
     int size = 5;
-    Tarray<int> arr(size, 1);
+    TArray<int> arr(size, 1);
     std::cout << "arr: " << arr << std::endl;
     for (int i = 0; i < size; ++i)
     {
@@ -13,10 +13,10 @@ int main()
 
     std::cout << "arr: " << arr << std::endl;
 
-    Tarray<int> arr2 = arr;
+    TArray<int> arr2 = arr;
     std::cout << "arr2: " << arr2 << std::endl;
 
-    Tarray<int> arr3, arr4;
+    TArray<int> arr3, arr4;
     arr3 = arr4 = arr2;
 
     std::cout << "arr3: " << arr3 << std::endl;

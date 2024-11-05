@@ -1,0 +1,91 @@
+#include <cube.h>
+#include <iostream>
+#include <fstream>
+#include <json.hpp>
+
+using json = nlohmann::json;
+
+void save_json(Mesh &m);
+void print_mesh_info(Mesh &m, int subdiv);
+
+int main()
+{
+    int subdiv = 10;
+    Mesh m;
+    load_cube(m, subdiv);
+
+    //print_mesh_info(m, subdiv);
+
+    save_json(m);
+
+    return 0;
+}
+
+void save_json(Mesh &m)
+{
+    // 创建 JSON 对象
+    json meshData;
+    meshData["vertices"] = json::array();
+    meshData["triangles"] = json::array();
+
+    // 保存顶点信息到 JSON
+    for (const auto &vec : m.vertices)
+    {
+        json vertex = {vec.x, vec.y, vec.z}; // 假设 vec 有 x, y, z 属性
+        meshData["vertices"].push_back(vertex);
+    }
+
+    // 保存三角形信息到 JSON
+    for (const auto &tri : m.triangles)
+    {
+        json triangle = {tri[0], tri[1], tri[2]}; // 假设 tri 是一个索引数组
+        meshData["triangles"].push_back(triangle);
+    }
+
+    // 将 JSON 写入文件
+    std::ofstream file("/mnt/e/myGlfw/mesh_data.json");
+    if (file.is_open())
+    {
+        file << meshData.dump(4); // 格式化输出，缩进4个空格
+        file.close();
+        std::cout << "Mesh data saved to /mnt/e/myGlfw/mesh_data.json" << std::endl;
+    }
+    else
+    {
+        std::cerr << "Unable to open file for writing" << std::endl;
+    }
+}
+
+void print_mesh_info(Mesh &m, int subdiv)
+{
+    std::cout << "vertices: " << m.vertex_count() << std::endl;
+    std::cout << "triangles: " << m.triangle_count() << std::endl;
+
+    std::cout << "--------vertices--------" << std::endl;
+
+    int i = 0;
+    for (auto vec : m.vertices)
+    {
+        std::cout << vec << std::endl;
+        ++i;
+        if (i == (subdiv + 1) * (subdiv + 1))
+        {
+            std::cout << std::endl;
+            i = 0;
+        }
+    }
+
+    std::cout << "--------triangles--------" << std::endl;
+
+    i = 0;
+    for (auto vec : m.triangles)
+    {
+        std::cout << vec << std::endl;
+        ++i;
+        if (i == (subdiv + 1) * (subdiv + 1))
+        {
+            std::cout << std::endl;
+            i = 0;
+        }
+    }
+}

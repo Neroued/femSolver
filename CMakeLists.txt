@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.10)
 project(MyGLFWApp VERSION 1.0)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
@@ -19,7 +19,8 @@ target_include_directories(glad PUBLIC extern/glad/include)
 
 # 定义可执行文件
 add_executable(MyGLFWApp src/test_glfw.cpp)
-add_executable(test_Tarray src/test_Tarray.cpp)
+add_executable(test_TArray src/test_TArray.cpp)
+add_executable(test_cube src/test_cube.cpp)
 
 # 链接GLFW、GLAD和OpenGL库
 target_link_libraries(MyGLFWApp PRIVATE glfw glad GL)
