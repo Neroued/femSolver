@@ -27,3 +27,6 @@ target_link_libraries(MyGLFWApp PRIVATE glfw glad GL)
 
 # 指定头文件搜索路径
 target_include_directories(MyGLFWApp PRIVATE extern/glfw/include extern/glad/include)
+
+target_compile_options(test_cube PRIVATE -O3)  # 仅对 my_program 启用 O3 优化
+target_compile_options(test_cube PUBLIC -Wall -Wextra -ffast-math -march=native)
