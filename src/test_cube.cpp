@@ -2,22 +2,27 @@
 #include <iostream>
 #include <fstream>
 #include <json.hpp>
+#include <sphere.h>
 
 using json = nlohmann::json;
 
 void save_json(Mesh &m);
 void print_mesh_info(Mesh &m, int subdiv);
 int test_load_cube(Mesh &m, const int subdiv);
+int test_load_sphere(Mesh &m, const int subdiv);
+
 
 int main()
 {
     int subdiv = 500;
     Mesh m;
-    test_load_cube(m, subdiv);
+    //test_load_cube(m, subdiv);
+
+    test_load_sphere(m,subdiv);
 
     //print_mesh_info(m, subdiv);
 
-    // save_json(m);
+    //save_json(m);
 
     return 0;
 }
@@ -97,6 +102,19 @@ int test_load_cube(Mesh &m, const int subdiv)
 
     t.start();
     load_cube(m, subdiv);
+    t.stop();
+
+    std::cout << "生成总用时: " << t.elapsedMilliseconds() << "ms\n";
+
+    return 0;
+}
+
+int test_load_sphere(Mesh &m, const int subdiv)
+{
+    Timer t;
+
+    t.start();
+    load_sphere(m, subdiv);
     t.stop();
 
     std::cout << "生成总用时: " << t.elapsedMilliseconds() << "ms\n";

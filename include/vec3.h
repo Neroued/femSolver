@@ -271,9 +271,9 @@ namespace std
 	{
 		std::size_t operator()(const TVec3<T> &vec) const
 		{
-			std::size_t hx = std::hash<T>()(vec.x);
-			std::size_t hy = std::hash<T>()(vec.y);
-			std::size_t hz = std::hash<T>()(vec.z);
+			std::size_t hx = std::hash<T>()(std::round(vec.x * 1000) / 1000); // 处理小数位
+			std::size_t hy = std::hash<T>()(std::round(vec.y * 1000) / 1000);
+			std::size_t hz = std::hash<T>()(std::round(vec.z * 1000) / 1000);
 			return hx ^ (hy << 1) ^ (hz << 2);
 		}
 	};

@@ -5,7 +5,7 @@
 #include <timer.h>
 #include <iostream>
 
-/* 生成立方体网格
+/* 生成立方体网格, 中心为原点，边长为2
  * 对于有n个子分割的网格
  * 正方体网格中有6n^2+2个顶点, 12n^2个三角形
  * 1. 生成顶点，同时使用hash表记录每个顶点的对应下标，生成一个不包含重复点的顶点集合 vertex_index_map
@@ -26,11 +26,9 @@ int load_cube(Mesh &m, const int subdiv)
     Vec3 Axis_z = {0, 0, 1};
 
     std::vector<std::vector<Vec3>> r = {{Axis_z, Axis_x, Axis_y}, {Axis_x, Axis_y, Axis_z}, {Axis_y, Axis_x, Axis_z}};
-
     std::unordered_map<Vec3, int> vertex_index_map;
-    vertex_index_map.reserve(6 * subdiv * subdiv + 2); // 为哈希表预分配空间
+    vertex_index_map.reserve(6 * subdiv * subdiv + 2); // 为哈希表预分配空间, 数量为不重复点的数量gdb
     int *dupToNoDupIndex = new int[6 * n * n];
-
     m.vertices.resize(6 * subdiv * subdiv + 2); // 总共6(subdiv+1)^2个点，实际不重复的点有6*subdiv^2+2个
 
     int t = 0; // t 表示存在重复点的下标
@@ -40,14 +38,15 @@ int load_cube(Mesh &m, const int subdiv)
         Vec3 a = v[0];
         Vec3 b = v[1];
         Vec3 c = v[2];
-        for (float f = 0.f; f < 1.9f; f += 1)
+        for (float f = 0.f; f < 1.1f; f += 1)
         {
             for (int i = 0; i < n; ++i)
             {
                 for (int j = 0; j < n; ++j)
                 {
                     Vec3 tmp;
-                    tmp = a * f + b * (float(i) / subdiv) + c * (float(j) / subdiv);
+                    Vec3 z {-1,-1,-1};
+                    tmp = (a * f + b * (float(i) / subdiv) + c * (float(j) / subdiv)) * 2.f + z;
 
                     auto it = vertex_index_map.find(tmp);
                     if (it == vertex_index_map.end()) // 若这个点是首次出现
