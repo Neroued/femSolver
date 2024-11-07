@@ -7,22 +7,21 @@
 using json = nlohmann::json;
 
 void save_json(Mesh &m);
-void print_mesh_info(Mesh &m, int subdiv);
+void print_mesh_info(Mesh &m, const int subdiv);
 int test_load_cube(Mesh &m, const int subdiv);
 int test_load_sphere(Mesh &m, const int subdiv);
-
 
 int main()
 {
     int subdiv = 500;
     Mesh m;
-    //test_load_cube(m, subdiv);
+    test_load_cube(m, subdiv);
 
-    test_load_sphere(m,subdiv);
+    // test_load_sphere(m, subdiv);
 
-    //print_mesh_info(m, subdiv);
+    // print_mesh_info(m, subdiv);
 
-    //save_json(m);
+    // save_json(m);
 
     return 0;
 }
@@ -37,7 +36,7 @@ void save_json(Mesh &m)
     // 保存顶点信息到 JSON
     for (const auto &vec : m.vertices)
     {
-        json vertex = {vec.x, vec.y, vec.z}; 
+        json vertex = {vec.x, vec.y, vec.z};
         meshData["vertices"].push_back(vertex);
     }
 
@@ -62,7 +61,7 @@ void save_json(Mesh &m)
     }
 }
 
-void print_mesh_info(Mesh &m, int subdiv)
+void print_mesh_info(Mesh &m, const int subdiv)
 {
     std::cout << "vertices: " << m.vertex_count() << std::endl;
     std::cout << "triangles: " << m.triangle_count() << std::endl;
