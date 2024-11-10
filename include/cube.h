@@ -41,10 +41,11 @@ int load_cube(Mesh &m, const int subdiv)
     // 使用一个hash函数将Vec3映射到int64, 避免使用Vec3作为主键
     std::unordered_map<int64_t, int> vertex_index_map;
     vertex_index_map.reserve(uniqueVertices);
-
+    m.vertices.resize(uniqueVertices);
+    
     // 从重复点索引到不重复点索引的map
     int *dupToNoDupIndex = new int[totalVertices];
-    m.vertices.resize(totalVertices);
+    
 
     int t = 0; // t 表示存在重复点的下标
     int p = 0; // p 表示不重复点的下标
@@ -112,7 +113,7 @@ int load_cube(Mesh &m, const int subdiv)
 
     timer.start();
     // 生成三角形
-    m.triangles.resize(12 * subdiv * subdiv); // 共计12n^2个三角形
+    m.indices.resize(36 * subdiv * subdiv); // 共计12n^2个三角形, 36n^2个顶点
 
     t = 0;
     int faceVertexOffset = 0;
@@ -132,8 +133,12 @@ int load_cube(Mesh &m, const int subdiv)
                 int v2 = dupToNoDupIndex[idx2];
                 int v3 = dupToNoDupIndex[idx3];
 
-                m.triangles[t++] = {v0, v1, v2};
-                m.triangles[t++] = {v1, v2, v3};
+                m.indices[t++] = v0;
+                m.indices[t++] = v1;
+                m.indices[t++] = v2;
+                m.indices[t++] = v1;
+                m.indices[t++] = v2;
+                m.indices[t++] = v3;
             }
         }
 

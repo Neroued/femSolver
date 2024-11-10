@@ -41,9 +41,9 @@ void save_json(Mesh &m)
     }
 
     // 保存三角形信息到 JSON
-    for (const auto &tri : m.triangles)
+    for (size_t i = 0; i < m.indices.size; i += 3)
     {
-        json triangle = {tri[0], tri[1], tri[2]}; // 假设 tri 是一个索引数组
+        json triangle = {m.indices[i], m.indices[i + 1], m.indices[i + 2]}; // 假设 tri 是一个索引数组
         meshData["triangles"].push_back(triangle);
     }
 
@@ -82,16 +82,11 @@ void print_mesh_info(Mesh &m, const int subdiv)
 
     std::cout << "--------triangles--------" << std::endl;
 
-    i = 0;
-    for (auto vec : m.triangles)
+    for (size_t i = 0; i < m.indices.size; i += 3)
     {
-        std::cout << vec << std::endl;
-        ++i;
-        if (i == (subdiv + 1) * (subdiv + 1))
-        {
-            std::cout << std::endl;
-            i = 0;
-        }
+        std::cout << "[" << m.indices[i] << ", "
+                  << m.indices[i + 1] << ", "
+                  << m.indices[i + 2] << "]" << std::endl;
     }
 }
 
