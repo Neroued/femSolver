@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <iostream>
 #include <algorithm>
+#include <stdexcept>
+#include <cmath>
 
 template <typename T>
 class TArray
@@ -24,6 +26,22 @@ public:
 
     TArray &operator=(const TArray<T> &other); // 重载=赋值运算符
 
+    // 重载算数运算符用来作为向量使用
+    TArray<T> operator+(const TArray<T> &other);
+    TArray<T> operator-(const TArray<T> &other); // 用于向量差 a-b
+    TArray<T> operator-() const;                 // 用于 -a
+    TArray<T> &operator+=(const TArray<T> &other);
+    TArray<T> &operator-=(const TArray<T> &other);
+    TArray<T> &operator*=(const T scalar);
+    TArray<T> &operator/=(const T scalar);
+
+    // 声明为友元函数，需要显示声明为模板
+    template <typename U>
+    friend TArray<U> operator*(const TArray<U> &arr, const U scalar);
+    template <typename U>
+    friend TArray<U> operator*(const U scalar, const TArray<U> &arr);
+    template <typename U>
+    friend TArray<U> operator/(const TArray<U> &arr, const U scalar);
     template <typename U>
     friend std::ostream &operator<<(std::ostream &os, const TArray<U> &arr); // 通过声明友元的方式重载<<以使用cout输出
 
@@ -32,8 +50,12 @@ public:
     size_t get_capacity() const; // 获取容量
     void push_back(const T &t);  // 向末尾增加一个元素,值为t
     void resize(size_t size);    // 修改Array的size
-    T *erase(T *pos);
-    T *erase(T *first, T *last);
+    T *erase(T *pos);            // 删除指定位置的元素
+    T *erase(T *first, T *last); // 删除指定范围的元素
+
+    // 有关线性代数的方法
+    T norm() const;
+    T norm2() const;
 
     // begin() 与 end() 以支持迭代器
     T *begin() { return data; }
@@ -41,13 +63,13 @@ public:
     const T *begin() const { return data; }
     const T *end() const { return data + size; }
 
-
-
     // TArray中的成员
     size_t size;     // 当前array的元素个数
     size_t capacity; // 当前分配的容量
     T *data;         // 存储的T数组
 };
+
+typedef TArray<double> Vec;
 
 // 构造函数
 template <typename T>
@@ -135,8 +157,146 @@ inline TArray<T> &TArray<T>::operator=(const TArray<T> &other)
     return *this; // 返回当前对象的引用，以支持连续赋值
 }
 
+// 重载算数运算符用来作为向量使用
+
 template <typename T>
-std::ostream &operator<<(std::ostream &os, const TArray<T> &arr)
+inline TArray<T> TArray<T>::operator+(const TArray<T> &other)
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot add TArray objects of different sizes.");
+    }
+
+    TArray<T> res(size);
+    for (size_t i = 0; i < size; ++i)
+    {
+        res.data[i] = data[i] + other.data[i];
+    }
+    return res;
+}
+
+template <typename T>
+inline TArray<T> TArray<T>::operator-(const TArray<T> &other) // 用于向量差 a-b
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot subtract TArray objects of different sizes.");
+    }
+
+    TArray<T> res(size);
+    for (size_t i = 0; i < size; ++i)
+    {
+        res.data[i] = data[i] - other.data[i];
+    }
+    return res;
+}
+
+template <typename T>
+inline TArray<T> TArray<T>::operator-() const // 用于 -a
+{
+    TArray<T> res(size);
+    for (size_t i = 0; i < size; ++i)
+    {
+        res.data[i] = -data[i];
+    }
+    return res;
+}
+
+template <typename T>
+inline TArray<T> &TArray<T>::operator+=(const TArray<T> &other)
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot add TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] += other.data[i];
+    }
+    return *this;
+}
+
+template <typename T>
+inline TArray<T> &TArray<T>::operator-=(const TArray<T> &other)
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot subtract TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] -= other.data[i];
+    }
+    return *this;
+}
+
+template <typename T>
+inline TArray<T> &TArray<T>::operator*=(const T scalar)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] *= scalar;
+    }
+    return *this;
+}
+
+template <typename T>
+inline TArray<T> &TArray<T>::operator/=(const T scalar)
+{
+    if (scalar == 0)
+    {
+        throw std::domain_error("Division by zero: Cannot divide TArray by zero.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] /= scalar;
+    }
+    return *this;
+}
+
+template <typename U>
+inline TArray<U> operator*(const TArray<U> &v, const U scalar)
+{
+    TArray<U> res(v.size);
+    for (size_t i = 0; i < v.size; ++i)
+    {
+        res[i] = scalar * v[i];
+    }
+    return res;
+}
+
+template <typename U>
+inline TArray<U> operator*(const U scalar, const TArray<U> &v)
+{
+    TArray<U> res(v.size);
+    for (size_t i = 0; i < v.size; ++i)
+    {
+        res[i] = scalar * v[i];
+    }
+    return res;
+}
+
+template <typename U>
+inline TArray<U> operator/(const TArray<U> &v, const U scalar)
+{
+    if (scalar == 0)
+    {
+        throw std::domain_error("Division by zero: Cannot divide TArray by zero.");
+    }
+
+    TArray<U> res(v.size);
+    for (size_t i = 0; i < v.size; ++i)
+    {
+        res[i] = v[i] / scalar;
+    }
+    return res;
+}
+
+template <typename U>
+std::ostream &operator<<(std::ostream &os, const TArray<U> &arr)
 {
     os << "[";
     for (size_t i = 0; i < arr.size; ++i)
@@ -149,6 +309,47 @@ std::ostream &operator<<(std::ostream &os, const TArray<T> &arr)
     }
     os << "]";
     return os;
+}
+
+// 有关线性代数的方法
+template <typename T>
+T TArray<T>::norm() const
+{
+    T res;
+    for (size_t i = 0; i < size; ++i)
+    {
+        res += data[i] * data[i];
+    }
+
+    return sqrt(res);
+}
+
+template <typename T>
+T TArray<T>::norm2() const
+{
+    T res;
+    for (size_t i = 0; i < size; ++i)
+    {
+        res += data[i] * data[i];
+    }
+
+    return res;
+}
+
+template <typename T>
+T dot(const TArray<T> &a, const TArray<T> &b)
+{
+    if (a.size != b.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot compute dot product for arrays of different sizes.");
+    }
+
+    T res = T{}; // 确保初始化为零
+    for (size_t i = 0; i < a.size; ++i)
+    {
+        res += a[i] * b[i];
+    }
+    return res;
 }
 
 // 成员函数
