@@ -37,6 +37,27 @@ int main()
     std::cout << "arr4: " << arr4 << std::endl;
     std::cout << "capacity of arr4 : " << arr4.get_capacity() << std::endl;   
 
+    std::cout << "----测试向量运算----" << std::endl;
+
+    TArray<float> a(10,1.8);
+    TArray<float> b(10,2);
+    TArray<float> c(8,1);
+    float n = 30;
+
+    std::cout << "a * n = " << a * n << std::endl;
+    std::cout << "a / n = " << a / n << std::endl;
+    std::cout << "a + b = " << a + b << std::endl;
+    std::cout << "a - b = " << a - b << std::endl;
+    std::cout << "-a = " << -a << std::endl;
+
+    a -= b;
+    std::cout << "a -= b " << a << std::endl;
+
+    a -= b;
+    std::cout << "a -= b " << a << std::endl;
+
+    std::cout << "a dot b " << dot(a,b) << std::endl;
+    std::cout << "norm of c " << c.norm() << std::endl;
 
     return 0;
 }
