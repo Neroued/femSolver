@@ -26,6 +26,7 @@ include_directories(${GLM_INCLUDE_DIR})
 add_executable(MyGLFWApp src/test_glfw.cpp)
 add_executable(test_TArray src/test_TArray.cpp)
 add_executable(test_cube src/test_cube.cpp)
+add_executable(test_systemSolve src/test_systemSolve.cpp)
 
 
 
