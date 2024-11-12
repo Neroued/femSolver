@@ -36,18 +36,21 @@ bool decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, Vec &u, doubl
     Au.addInPlace(MVP(S, u));
 
     // r = B - Au
-    B.subtract(Au, r);
+    blas_axpby(1.0, B, -1.0, Au, r);
 
-    Vec Ar(n, 0);
+    Vec Ar(n);
+    Vec Mr(n);
+    Vec Sr(n);
     double alpha;
-    while (r.norm() > tol && iter++ < iterMax)
+    double r_norm = r.norm();
+    while (r_norm > tol && iter++ < iterMax)
     {
         // calcute alpha
 
         // Ar = M * r + S * r
-        Ar.setAll(0); // 在每次进行MVP运算前需要将Ar置0
-        MVP(M, r, Ar);
-        Ar.addInPlace(MVP(S, r));
+        M.MVP(r, Mr);
+        S.MVP(r, Sr);
+        blas_axpby(1.0, Mr, 1.0, Sr, Ar);
 
         double denominator = dot(Ar, r);
         if (denominator == 0)
@@ -56,13 +59,14 @@ bool decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, Vec &u, doubl
         }
 
         // alpha = (r^T * r) / (r^T * A * r)
-        alpha = r.norm2() / denominator;
+        alpha = r_norm * r_norm / denominator;
 
         // update u and r
         // u = u + alpha * r
-        u.addInPlace(alpha * r);
+        blas_axpby(1.0, u, alpha, r, u);
         // r = r - alpha * A * r
-        r.subtractInPlace(alpha * Ar);
+        blas_axpby(1.0, r, -alpha, Ar, r);
+        r_norm = r.norm();
     }
 
     if (iter >= iterMax && r.norm() >= tol)
@@ -142,30 +146,36 @@ bool conjugateGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, Vec &u, do
     double beta;
 
     Vec Ap(n);
-
+    Vec Mp(n);
+    Vec Sp(n);
+    Vec r1(n);
+    double r0_norm2;
+    double r1_norm2;
     while (iter++ < iterMax)
     {   
-        Ap.setAll(0);
-        MVP(M, p, Ap);
-        Ap.addInPlace(MVP(S, p));
+        M.MVP(p, Mp);
+        S.MVP(p, Sp);
+        blas_axpby(1.0, Mp, 1.0, Sp, Ap);
 
-        double alpha = r0.norm2() / dot(p, Ap);
-        u.addInPlace(alpha * p);
+        r0_norm2 = r0.norm2();
+        double alpha = r0_norm2 / dot(p, Ap);
+        blas_axpby(1.0, u, alpha, p, u);
 
-        // r0.subtract(alpha * Ap, r1);
-        // 不知为何不能使用这个语句，使用会导致r0.norm2()对相同的r0输出不同的值
-        Vec r1 = r0 - alpha * Ap; // r_{k+1} = r_k - alpha_k * A @ p_k
+        blas_axpby(1.0, r0, -alpha, Ap, r1);
+        //Vec r1 = r0 - alpha * Ap; // r_{k+1} = r_k - alpha_k * A @ p_k
+        r1_norm2 = r1.norm2();
 
-        if (r1.norm() < tol)
+        if (r1_norm2 < tol * tol)
         {
             break;
         }
 
         // calculate beta
-        beta = r1.norm2() / r0.norm2();
+        beta = r1_norm2 / r0_norm2;
 
         // updata p_k, r_k
-        p = r1 + beta * p;
+        blas_axpby(1.0, r1, beta, p, p);
+        // p = r1 + beta * p;
         r0 = r1;
     }
 

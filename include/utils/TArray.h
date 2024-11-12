@@ -332,7 +332,7 @@ std::ostream &operator<<(std::ostream &os, const TArray<U> &arr)
 template <typename T>
 T TArray<T>::norm() const
 {
-    T res;
+    T res = 0;
     for (size_t i = 0; i < size; ++i)
     {
         res += data[i] * data[i];
@@ -344,7 +344,7 @@ T TArray<T>::norm() const
 template <typename T>
 T TArray<T>::norm2() const
 {
-    T res;
+    T res = 0;
     for (size_t i = 0; i < size; ++i)
     {
         res += data[i] * data[i];
@@ -558,5 +558,15 @@ inline void TArray<T>::setAll(const T &value)
     for (size_t i = 0; i < size; ++i)
     {
         data[i] = value;
+    }
+}
+
+template <typename T>
+inline void blas_axpby(const T &a, const TArray<T> &x, const T &b, const TArray<T> &y, TArray<T> &out)
+// out  = ax + by
+{
+    for (size_t i = 0; i < x.size; ++i)
+    {
+        out.data[i] = a * x.data[i] + b * y.data[i];
     }
 }

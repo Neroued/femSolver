@@ -25,7 +25,7 @@ void generateStiffnessMatrix(SparseMatrix &matrix, int size)
     {
         // 修改主对角线元素，使其值在 [1, large_value] 之间变化
         // 我们可以使用指数函数或其他方式来增加条件数
-        double large_value = 1;                                                      // 设置一个大的值，增大条件数
+        double large_value = 1e4;                                                      // 设置一个大的值，增大条件数
         double diagonalValue = 1.0 + (large_value - 1.0) * ((double)i / (size - 1)); // 从1到large_value线性增长
 
         matrix.cooefs[index++] = {i, i, diagonalValue};
@@ -73,7 +73,7 @@ Vec generateVector(int size)
 // 测试
 void testSolve(int choice)
 {
-    int matrixSize = 100; // 矩阵的维度
+    int matrixSize = 1000; // 矩阵的维度
     int iterMax = INT32_MAX;
     double tol = 1e-7;
 
@@ -102,7 +102,10 @@ void testSolve(int choice)
     double t2 = t.elapsedMilliseconds();
 
     std::cout << "decentGraident用时: " << t1 << "ms" << " 收敛性: " << f1 << std::endl;
+    std::cout << " B - Au norm: " << (B - MVP(M, solution1) - MVP(S, solution1)).norm() << std::endl;
     std::cout << "conjugateGradient用时: " << t2 << "ms" << " 收敛性: " << f2 << std::endl;
+    std::cout << " B - Au norm: " << (B - MVP(M, solution2) - MVP(S, solution2)).norm() << std::endl;
+    std::cout << " sol1 - sol2 norm: " << (solution1 - solution2).norm() << std::endl;
 }
 
 int main(int argc, char *argv[])

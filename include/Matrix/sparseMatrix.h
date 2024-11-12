@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Matrix.h>
 #include <TArray.h>
 #include <assert.h>
 #include <iostream>
@@ -12,20 +13,18 @@ struct Cooef
     double val;
 };
 
-class SparseMatrix
+class SparseMatrix : public Matrix
 {
 public:
-    int rows;
-    int cols;
     int nnz; //  非零元素的数量
     struct Cooef *cooefs;
 
-    SparseMatrix() : rows(0), cols(0), nnz(0), cooefs(nullptr) {}
+    SparseMatrix() : Matrix(0, 0), nnz(0), cooefs(nullptr) {}
 
-    SparseMatrix(int r, int c) : rows(r), cols(c), nnz(0), cooefs(nullptr) {}
+    SparseMatrix(int r, int c) : Matrix(r, c), nnz(0), cooefs(nullptr) {}
 
     SparseMatrix(int r, int c, int nonZeroElements)
-        : rows(r), cols(c), nnz(nonZeroElements), cooefs(new Cooef[nonZeroElements]) {}
+        : Matrix(r, c), nnz(nonZeroElements), cooefs(new Cooef[nonZeroElements]) {}
 
     ~SparseMatrix() { delete[] cooefs; }
 
@@ -34,7 +33,27 @@ public:
     SparseMatrix &operator=(const SparseMatrix &) = delete;
 
     void print();
+    void MVP(const Vec &x, Vec &y) const; // Ax = y
 };
+
+void SparseMatrix::MVP(const Vec &x, Vec &y) const
+{
+    // 初始化out
+    y.setAll(0);
+    if (cols != x.size || cols != y.size)
+    {
+        throw std::invalid_argument("Size mismatch: The number of columns in the matrix does not match the size of the vector.");
+    }
+
+    // 稀疏矩阵-向量乘法
+    struct Cooef *tmp;
+    for (int idx = 0; idx < nnz; ++idx)
+    {
+        tmp = &cooefs[idx];
+        y[tmp->i] += tmp->val * x[tmp->j];
+    }
+}
+
 
 Vec MVP(const SparseMatrix &M, const Vec &v)
 {
@@ -57,6 +76,8 @@ Vec MVP(const SparseMatrix &M, const Vec &v)
 
 void MVP(const SparseMatrix &M, const Vec &v, Vec &out)
 {
+    // 初始化out
+    out.setAll(0);
     if (M.cols != v.size || M.cols != out.size)
     {
         throw std::invalid_argument("Size mismatch: The number of columns in the matrix does not match the size of the vector.");

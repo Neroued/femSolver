@@ -8,7 +8,7 @@ project(MyGLFWApp VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(include/linalg include/Matrix include/Mesh include/utils extern/json)
 
 # 包含GLFW库的子目录
 add_subdirectory(extern/glfw)
