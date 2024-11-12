@@ -35,6 +35,22 @@ public:
     TArray<T> &operator*=(const T scalar);
     TArray<T> &operator/=(const T scalar);
 
+    // 向量加法：result = this + other
+    void add(const TArray<T> &other, TArray<T> &result) const;
+    // 向量减法：result = this - other
+    void subtract(const TArray<T> &other, TArray<T> &result) const;
+    // 向量取负：result = -this
+    void negate(TArray<T> &result) const;
+    // 向量加法赋值：this += other
+    void addInPlace(const TArray<T> &other);
+    // 向量减法赋值：this -= other
+    void subtractInPlace(const TArray<T> &other);
+    // 向量数乘赋值：this *= scalar
+    void scaleInPlace(const T scalar);
+    // 向量除法赋值：this /= scalar
+    void divideInPlace(const T scalar);
+
+
     // 声明为友元函数，需要显示声明为模板
     template <typename U>
     friend TArray<U> operator*(const TArray<U> &arr, const U scalar);
@@ -52,6 +68,7 @@ public:
     void resize(size_t size);    // 修改Array的size
     T *erase(T *pos);            // 删除指定位置的元素
     T *erase(T *first, T *last); // 删除指定范围的元素
+    void setAll(const T &value); // 将全部元素设置为value
 
     // 有关线性代数的方法
     T norm() const;
@@ -407,4 +424,139 @@ T *TArray<T>::erase(T *first, T *last)
         size -= (last - first); // 更新 size
     }
     return first;
+}
+
+template <typename T>
+inline void TArray<T>::add(const TArray<T> &other, TArray<T> &result) const
+{
+    if (size != other.size || size != result.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot add TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        result.data[i] = data[i] + other.data[i];
+    }
+}
+
+template <typename T>
+inline void TArray<T>::subtract(const TArray<T> &other, TArray<T> &result) const
+{
+    if (size != other.size || size != result.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot subtract TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        result.data[i] = data[i] - other.data[i];
+    }
+}
+
+template <typename T>
+inline void TArray<T>::negate(TArray<T> &result) const
+{
+    if (size != result.size)
+    {
+        throw std::invalid_argument("Size mismatch: Result TArray size must match.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        result.data[i] = -data[i];
+    }
+}
+
+template <typename T>
+inline void TArray<T>::addInPlace(const TArray<T> &other)
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot add TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] += other.data[i];
+    }
+}
+
+template <typename T>
+inline void TArray<T>::subtractInPlace(const TArray<T> &other)
+{
+    if (size != other.size)
+    {
+        throw std::invalid_argument("Size mismatch: Cannot subtract TArray objects of different sizes.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] -= other.data[i];
+    }
+}
+
+template <typename T>
+inline void TArray<T>::scaleInPlace(const T scalar)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] *= scalar;
+    }
+}
+
+template <typename T>
+inline void TArray<T>::divideInPlace(const T scalar)
+{
+    if (scalar == 0)
+    {
+        throw std::domain_error("Division by zero: Cannot divide TArray by zero.");
+    }
+
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] /= scalar;
+    }
+}
+
+template <typename U>
+inline void scale(const TArray<U> &v, const U scalar, TArray<U> &result)
+{
+    if (v.size != result.size)
+    {
+        throw std::invalid_argument("Size mismatch: Result TArray size must match.");
+    }
+
+    for (size_t i = 0; i < v.size; ++i)
+    {
+        result.data[i] = scalar * v.data[i];
+    }
+}
+
+template <typename U>
+inline void divide(const TArray<U> &v, const U scalar, TArray<U> &result)
+{
+    if (scalar == 0)
+    {
+        throw std::domain_error("Division by zero: Cannot divide TArray by zero.");
+    }
+
+    if (v.size != result.size)
+    {
+        throw std::invalid_argument("Size mismatch: Result TArray size must match.");
+    }
+
+    for (size_t i = 0; i < v.size; ++i)
+    {
+        result.data[i] = v.data[i] / scalar;
+    }
+}
+
+template <typename T>
+inline void TArray<T>::setAll(const T &value)
+{
+    for (size_t i = 0; i < size; ++i)
+    {
+        data[i] = value;
+    }
 }
