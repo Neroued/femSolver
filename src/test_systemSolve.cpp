@@ -5,6 +5,7 @@
 #include <TArray.h>
 #include <systemSolve.h>
 #include <string>
+#include <timer.h>
 
 // 生成稀疏矩阵的函数，生成条件数较差的矩阵
 void generateStiffnessMatrix(SparseMatrix &matrix, int size)
@@ -24,7 +25,7 @@ void generateStiffnessMatrix(SparseMatrix &matrix, int size)
     {
         // 修改主对角线元素，使其值在 [1, large_value] 之间变化
         // 我们可以使用指数函数或其他方式来增加条件数
-        double large_value = 1;                                                    // 设置一个大的值，增大条件数
+        double large_value = 1;                                                      // 设置一个大的值，增大条件数
         double diagonalValue = 1.0 + (large_value - 1.0) * ((double)i / (size - 1)); // 从1到large_value线性增长
 
         matrix.cooefs[index++] = {i, i, diagonalValue};
@@ -72,38 +73,36 @@ Vec generateVector(int size)
 // 测试
 void testSolve(int choice)
 {
-    int matrixSize = 10; // 矩阵的维度
-    int iterMax = 2147483647;
+    int matrixSize = 100; // 矩阵的维度
+    int iterMax = INT32_MAX;
+    double tol = 1e-7;
 
     // 生成刚度矩阵 M 和质量矩阵 S
     SparseMatrix M;
     generateStiffnessMatrix(M, matrixSize);
     SparseMatrix S;
     generateMassMatrix(S, matrixSize);
+
     Vec B = generateVector(matrixSize);
 
-    // 输出生成的稀疏矩阵和向量
-    // std::cout << "Stiffness Matrix M:" << std::endl;
-    // M.print();
-    // std::cout << "\nMass Matrix S:" << std::endl;
-    // S.print();
-    std::cout << "\nVector B:" << B << std::endl;
+    Vec solution1(matrixSize, 1);
 
-    Vec solution;
-    if (choice)
-    {
-        solution = decentGradientSolve(M, S, B, iterMax);
-    }
-    else
-    {
-        solution = conjugateGradientSolve(M, S, B, iterMax);
-    }
+    Timer t;
 
-    // 输出结果
-    std::cout << "\nSolution u:" << solution << std::endl;
+    t.start();
+    bool f1 = decentGradientSolve(M, S, B, solution1, tol, iterMax);
+    t.stop();
+    double t1 = t.elapsedMilliseconds();
 
-    // 测试结果
-    std::cout << "norm of B - Au : " << (B - (SMVP(M, solution) + SMVP(S, solution))).norm() << std::endl;
+    Vec solution2(matrixSize, 1);
+
+    t.start();
+    bool f2 = conjugateGradientSolve(M, S, B, solution2, tol, iterMax);
+    t.stop();
+    double t2 = t.elapsedMilliseconds();
+
+    std::cout << "decentGraident用时: " << t1 << "ms" << " 收敛性: " << f1 << std::endl;
+    std::cout << "conjugateGradient用时: " << t2 << "ms" << " 收敛性: " << f2 << std::endl;
 }
 
 int main(int argc, char *argv[])

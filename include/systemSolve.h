@@ -24,25 +24,30 @@
  * Note : r_{k + 1} = B - A(U_k + alpha_k r_k) = r_k - alpha_k Ar_k
  *        That will save us one matrix vector product.
  */
-Vec decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, int iterMax = 1000)
+bool decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, Vec &u, double tol, int iterMax = 1000)
 {
     int n = M.rows;
-    Vec u(n, 0); // Initialize u to (1,1,...,1)
-    Vec r(n);    // residue r = B - Au
+    Vec r(n); // residue r = B - Au
 
-    double tol = 1e-6;
     int iter = 0;
 
-    Vec Au = SMVP(M, u) + SMVP(S, u);
-    r = B - Au;
-    std::cout << "r.norm2(): " << r.norm2() << std::endl;
+    // Au = M * u + S * u
+    Vec Au = MVP(M, u);
+    Au.addInPlace(MVP(S, u));
 
-    Vec Ar;
+    // r = B - Au
+    B.subtract(Au, r);
+
+    Vec Ar(n, 0);
     double alpha;
     while (r.norm() > tol && iter++ < iterMax)
     {
         // calcute alpha
-        Ar = SMVP(M, r) + SMVP(S, r);
+
+        // Ar = M * r + S * r
+        Ar.setAll(0); // 在每次进行MVP运算前需要将Ar置0
+        MVP(M, r, Ar);
+        Ar.addInPlace(MVP(S, r));
 
         double denominator = dot(Ar, r);
         if (denominator == 0)
@@ -50,21 +55,26 @@ Vec decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, int iterMax = 
             throw std::runtime_error("Division by zero in alpha calculation: matrix might be singular or ill-conditioned.");
         }
 
+        // alpha = (r^T * r) / (r^T * A * r)
         alpha = r.norm2() / denominator;
 
         // update u and r
-        u = u + alpha * r;
-        r = r - alpha * Ar;
-
-        std::cout << "iter: " << iter << " r.norm2(): " << r.norm2() << std::endl;
+        // u = u + alpha * r
+        u.addInPlace(alpha * r);
+        // r = r - alpha * A * r
+        r.subtractInPlace(alpha * Ar);
     }
 
     if (iter >= iterMax && r.norm() >= tol)
     {
         std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
+        return false;
     }
-
-    return u;
+    else
+    {
+        std::cout << "decentGraident: Converge in " << iter << " iters" << std::endl;
+        return true;
+    }
 }
 
 /* Since S + M is symmetric and positive definite, we can solve
@@ -117,27 +127,34 @@ Vec decentGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, int iterMax = 
  * on r_{k+1} and p_k, we can optimize computations to avoid extra
  * matrix-vector products.
  */
-Vec conjugateGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, int iterMax = 1000)
+bool conjugateGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, Vec &u, double tol, int iterMax = 1000)
 {
+    using namespace std;
     int n = M.rows;
-    Vec u(n, 0);
 
-    Vec Au = SMVP(M, u) + SMVP(S, u); // Au = A @ u
-    Vec r0 = B - Au;                  // residue r_k = B - Au_k
-    Vec p = r0;                       // initial search direction
+    // Au = M * u + S * u
+    Vec Au = MVP(M, u);
+    Au.addInPlace(MVP(S, u));
+    Vec r0 = B - Au; // residue r_k = B - Au_k
+    Vec p = r0;      // initial search direction
 
     int iter = 0;
-    double tol = 1e-6;
     double beta;
 
-    while (iter++ < iterMax)
-    {
-        Vec Ap = SMVP(M, p) + SMVP(S, p); // A @ p
-        double alpha = r0.norm2() / dot(Ap, p);
-        u = u + alpha * p;
+    Vec Ap(n);
 
+    while (iter++ < iterMax)
+    {   
+        Ap.setAll(0);
+        MVP(M, p, Ap);
+        Ap.addInPlace(MVP(S, p));
+
+        double alpha = r0.norm2() / dot(p, Ap);
+        u.addInPlace(alpha * p);
+
+        // r0.subtract(alpha * Ap, r1);
+        // 不知为何不能使用这个语句，使用会导致r0.norm2()对相同的r0输出不同的值
         Vec r1 = r0 - alpha * Ap; // r_{k+1} = r_k - alpha_k * A @ p_k
-        std::cout << "iter: " << iter << " r1.norm(): " << r1.norm() << std::endl;
 
         if (r1.norm() < tol)
         {
@@ -155,7 +172,11 @@ Vec conjugateGradientSolve(SparseMatrix &M, SparseMatrix &S, Vec &B, int iterMax
     if (iter >= iterMax && r0.norm() >= tol)
     {
         std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
+        return false;
     }
-
-    return u;
+    else
+    {
+        std::cout << "conjugateGradient: Converge in " << iter << " iters" << std::endl;
+        return true;
+    }
 }

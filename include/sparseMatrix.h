@@ -36,7 +36,7 @@ public:
     void print();
 };
 
-Vec SMVP(const SparseMatrix &M, const Vec &v)
+Vec MVP(const SparseMatrix &M, const Vec &v)
 {
     Vec out(M.rows, 0);
 
@@ -46,12 +46,29 @@ Vec SMVP(const SparseMatrix &M, const Vec &v)
     }
 
     // 稀疏矩阵-向量乘法
+    struct Cooef *tmp;
     for (int idx = 0; idx < M.nnz; ++idx)
     {
-        struct Cooef *tmp = &M.cooefs[idx];
+        tmp = &M.cooefs[idx];
         out[tmp->i] += tmp->val * v[tmp->j];
     }
     return out;
+}
+
+void MVP(const SparseMatrix &M, const Vec &v, Vec &out)
+{
+    if (M.cols != v.size || M.cols != out.size)
+    {
+        throw std::invalid_argument("Size mismatch: The number of columns in the matrix does not match the size of the vector.");
+    }
+
+    // 稀疏矩阵-向量乘法
+    struct Cooef *tmp;
+    for (int idx = 0; idx < M.nnz; ++idx)
+    {
+        tmp = &M.cooefs[idx];
+        out[tmp->i] += tmp->val * v[tmp->j];
+    }
 }
 
 void SparseMatrix::print()
