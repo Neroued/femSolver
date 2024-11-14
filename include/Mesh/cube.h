@@ -6,6 +6,9 @@
 #include <iostream>
 #include <unordered_map>
 
+#ifndef CUBE
+#define CUBE 1
+#endif
 
 /* 生成立方体网格, 中心为原点，边长为2
  * 对于有n个子分割的网格
@@ -42,10 +45,9 @@ int load_cube(Mesh &m, const int subdiv)
     std::unordered_map<int64_t, int> vertex_index_map;
     vertex_index_map.reserve(uniqueVertices);
     m.vertices.resize(uniqueVertices);
-    
+
     // 从重复点索引到不重复点索引的map
     int *dupToNoDupIndex = new int[totalVertices];
-    
 
     int t = 0; // t 表示存在重复点的下标
     int p = 0; // p 表示不重复点的下标
@@ -135,10 +137,10 @@ int load_cube(Mesh &m, const int subdiv)
 
                 m.indices[t++] = v0;
                 m.indices[t++] = v1;
-                m.indices[t++] = v2;
-                m.indices[t++] = v1;
-                m.indices[t++] = v2;
                 m.indices[t++] = v3;
+                m.indices[t++] = v0;
+                m.indices[t++] = v3;
+                m.indices[t++] = v2;
             }
         }
 

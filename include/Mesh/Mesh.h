@@ -4,6 +4,8 @@
 #include <vec3.h>
 #include <cstdint>
 
+typedef int MeshType;
+
 class Mesh
 {
 public:
@@ -12,4 +14,7 @@ public:
 
     size_t vertex_count() const { return vertices.size; }
     size_t triangle_count() const { return indices.size / 3; }
+
+    Mesh() = default;
+    Mesh(int subdiv, MeshType meshtype);
 };

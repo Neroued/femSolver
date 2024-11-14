@@ -1,7 +1,13 @@
+#pragma once
 #include <vec3.h>
 #include <cube.h>
+#include <Mesh.h>
 
-void load_sphere(Mesh &m, int subdiv)
+#ifndef SPHERE
+#define SPHERE 2
+#endif
+
+int load_sphere(Mesh &m, int subdiv)
 {
     load_cube(m, subdiv);
 
@@ -13,4 +19,17 @@ void load_sphere(Mesh &m, int subdiv)
     }
     t.stop();
     std::cout << "生成球面用时: " << t.elapsedMilliseconds() << "ms" << std::endl;;
+    return 0;
+}
+
+Mesh::Mesh(int subdiv, MeshType meshtype)
+{
+    if (meshtype == CUBE)
+    {
+        load_cube(*this, subdiv);
+    }
+    else if (meshtype == SPHERE)
+    {
+        load_sphere(*this, subdiv);
+    }
 }
