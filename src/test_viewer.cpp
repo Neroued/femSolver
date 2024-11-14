@@ -45,8 +45,8 @@ int main(int argc, char *argv[])
     Viewer viewer(1200, 800, "3D Viewer");
     viewer.initialize();
 
-    viewer.displayMesh(mesh); // 设置要显示的网格
-    viewer.run();             // 开始渲染
+    viewer.setupMesh(mesh); // 设置要显示的网格
+    viewer.runMesh();             // 开始渲染
 
     return 0;
 }

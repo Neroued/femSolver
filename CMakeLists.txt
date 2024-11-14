@@ -26,17 +26,23 @@ add_executable(test_TArray src/test_TArray.cpp)
 add_executable(test_cube src/test_cube.cpp)
 add_executable(test_systemSolve src/test_systemSolve.cpp)
 add_executable(test_viewer src/test_viewer.cpp)
+add_executable(test_fem src/test_fem.cpp)
+add_executable(test_femdata src/test_femdata.cpp)
 
 
 
 # 链接GLFW、GLAD和OpenGL库
 target_link_libraries(test_glfw PRIVATE glfw glad GL)
 target_link_libraries(test_viewer PRIVATE glfw glad GL)
+target_link_libraries(test_femdata PRIVATE glfw glad GL)
 
 # 指定头文件搜索路径
 target_include_directories(test_glfw PRIVATE extern/glfw/include extern/glad/include)
 target_include_directories(test_viewer PRIVATE extern/glfw/include extern/glad/include)
+target_include_directories(test_femdata PRIVATE extern/glfw/include extern/glad/include)
 
 target_compile_options(test_cube PRIVATE -O3) # 启用 O3 优化
 target_compile_options(test_cube PUBLIC -Wall -Wextra -march=native)
+target_compile_options(test_fem PRIVATE -O3 -ffast-math) # 启用 O3 优化
+target_compile_options(test_femdata PRIVATE -O3 -ffast-math)
 

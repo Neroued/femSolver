@@ -1,14 +1,14 @@
 #include <iostream>
 #include <random>
 #include <stdexcept>
-#include <sparseMatrix.h>
+#include <COOMatrix.h>
 #include <TArray.h>
 #include <systemSolve.h>
 #include <string>
 #include <timer.h>
 
 // 生成稀疏矩阵的函数，生成条件数较差的矩阵
-void generateStiffnessMatrix(SparseMatrix &matrix, int size)
+void generateStiffnessMatrix(COOMatrix &matrix, int size)
 {
     // 刚度矩阵通常是对称的，这里我们修改对角线元素，使其值在一个较大的范围内变化
     int nonZeroElements = 3 * size - 2; // 主对角线 + 上下相邻对角线
@@ -25,7 +25,7 @@ void generateStiffnessMatrix(SparseMatrix &matrix, int size)
     {
         // 修改主对角线元素，使其值在 [1, large_value] 之间变化
         // 我们可以使用指数函数或其他方式来增加条件数
-        double large_value = 1e4;                                                      // 设置一个大的值，增大条件数
+        double large_value = 1e2;                                                      // 设置一个大的值，增大条件数
         double diagonalValue = 1.0 + (large_value - 1.0) * ((double)i / (size - 1)); // 从1到large_value线性增长
 
         matrix.cooefs[index++] = {i, i, diagonalValue};
@@ -39,7 +39,7 @@ void generateStiffnessMatrix(SparseMatrix &matrix, int size)
     }
 }
 
-void generateMassMatrix(SparseMatrix &matrix, int size)
+void generateMassMatrix(COOMatrix &matrix, int size)
 {
     // 质量矩阵通常是对角矩阵，这里保持不变
     matrix.cols = matrix.rows = size;
@@ -73,14 +73,14 @@ Vec generateVector(int size)
 // 测试
 void testSolve(int choice)
 {
-    int matrixSize = 1000; // 矩阵的维度
+    int matrixSize = 1500; // 矩阵的维度
     int iterMax = INT32_MAX;
     double tol = 1e-7;
 
     // 生成刚度矩阵 M 和质量矩阵 S
-    SparseMatrix M;
+    COOMatrix M;
     generateStiffnessMatrix(M, matrixSize);
-    SparseMatrix S;
+    COOMatrix S;
     generateMassMatrix(S, matrixSize);
 
     Vec B = generateVector(matrixSize);

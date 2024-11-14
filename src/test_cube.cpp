@@ -13,13 +13,13 @@ int test_load_sphere(Mesh &m, const int subdiv);
 
 int main()
 {
-    int subdiv = 500;
+    int subdiv = 3;
     Mesh m;
     test_load_cube(m, subdiv);
 
     // test_load_sphere(m, subdiv);
 
-    // print_mesh_info(m, subdiv);
+    print_mesh_info(m, subdiv);
 
     // save_json(m);
 
