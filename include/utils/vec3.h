@@ -43,7 +43,7 @@ struct TVec3
 
 typedef TVec3<float> Vec3f;
 typedef TVec3<double> Vec3d;
-using Vec3 = Vec3f;
+using Vec3 = Vec3d;
 
 /* Free functions declarations */
 
