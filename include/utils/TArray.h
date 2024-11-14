@@ -167,7 +167,7 @@ inline TArray<T> &TArray<T>::operator=(const TArray<T> &other)
     }
     else
     {
-        data = new T[size];
+        data = new T[capacity];
         std::copy(other.data, other.data + size, data);
     }
 
@@ -568,5 +568,15 @@ inline void blas_axpby(const T &a, const TArray<T> &x, const T &b, const TArray<
     for (size_t i = 0; i < x.size; ++i)
     {
         out.data[i] = a * x.data[i] + b * y.data[i];
+    }
+}
+
+template <typename T>
+inline void blas_axpy(const T &a, const TArray<T> &x, const TArray<T> &y)
+// y = ax + y
+{
+    for (size_t i = 0; i < x.size; ++i)
+    {
+        y.data[i] += a * x.data[i];
     }
 }
