@@ -24,31 +24,31 @@ static void fill_rhs(const Mesh &mesh, TArray<double> &f)
 }
 
 int main(int argc, char *argv[])
-{   
+{
     Timer t;
     Mesh mesh;
     int res = -1;
-    int subdiv = 100;
-	if (argc > 2 && strncmp(argv[1], "cube", 4) == 0)
-	{
+    int subdiv = 10;
+    if (argc > 2 && strncmp(argv[1], "cube", 4) == 0)
+    {
         subdiv = atoi(argv[2]);
-		res = load_cube(mesh, subdiv);
-	}
-	else if (argc > 2 && strncmp(argv[1], "sphere", 5) == 0)
-	{
+        res = load_cube(mesh, subdiv);
+    }
+    else if (argc > 2 && strncmp(argv[1], "sphere", 5) == 0)
+    {
         subdiv = atoi(argv[2]);
-		res = load_sphere(mesh, subdiv);
-	}
+        res = load_sphere(mesh, subdiv);
+    }
     else
     {
         load_cube(mesh, subdiv);
     }
     // 先根据subdiv生成网格
-    
+
     t.start();
 
     // 根据网格生成FEMatrix
-    FEMatrix M(mesh, 1), S(mesh, 3);
+    FEMatrix M(mesh, FEMatrix::P1_Mass), S(mesh, FEMatrix::P1_Stiffness);
 
     buildMassMatrix(M);
     buildStiffnessMatrix(S);
@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
     // std::cout << "S.offdiag: " << S.offdiag << std::endl;
     //  S.offdiag.setAll(0.0);
     //  S.diag.setAll(3.0);
-    
 
     int n = S.rows;
     std::cout << "S.rows: " << n << std::endl;
@@ -76,11 +75,15 @@ int main(int argc, char *argv[])
     Vec Ap(n);
 
     fill_rhs(mesh, f);
-    // std::cout << f << std::endl;
+    std::cout << f << std::endl;
 
-    B = f * M.diag[0];
+    M.MVP(f, B);
+    // for (size_t i = 0; i < M.diag.size; ++i)
+    // {
+    //     B[i] = f[i] * M.diag[i];
+    // }
 
-    // std::cout << B << std::endl;
+    std::cout << B << std::endl;
     //  f.setAll(1.0);
     double rel_error;
     int iter;
@@ -93,5 +96,4 @@ int main(int argc, char *argv[])
     std::cout << "用时: " << t.elapsedMilliseconds() << "ms" << std::endl;
 
     std::cout << "u[n - 1]: " << u[n - 1] << std::endl;
-
 }

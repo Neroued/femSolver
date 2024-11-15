@@ -23,7 +23,7 @@ public:
 };
 
 FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
-: mesh(subdiv, meshtype), A(mesh, 3), u(mesh.vertex_count(), 0.0), B(mesh.vertex_count())
+: mesh(subdiv, meshtype), A(mesh, FEMatrix::P1_Stiffness), u(mesh.vertex_count(), 0.0), B(mesh.vertex_count())
 {
     Timer t;
     for (size_t i = 0; i < mesh.vertex_count(); ++i)
@@ -32,7 +32,7 @@ FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
     }
     
     t.start();
-    FEMatrix M(mesh, 1);
+    FEMatrix M(mesh, FEMatrix::P1_Mass);
     buildMassMatrix(M);
     buildStiffnessMatrix(A);
     addMassToStiffness(A, M);
@@ -41,7 +41,7 @@ FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
 
     for (size_t i = 0; i < M.diag.size; ++i)
     {
-        B[i] /= M.diag[i];
+        B[i] *= M.diag[i];
     }
 
     int n = mesh.vertex_count();

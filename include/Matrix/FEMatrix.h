@@ -8,8 +8,14 @@ class FEMatrix : public Matrix
 // 专门为P1元生成矩阵使用
 {
 public:
+    enum FEMType
+    {
+        P1_Mass,
+        P1_Stiffness
+    };
     Vec diag; // 存储对角线元素
     Vec offdiag;
+    FEMType femtype;
     /* offdiag存储非对角线元素
      * 对于每一个三角形，都可以构建出一个3x3的loacl质量或刚度矩阵
      * 在质量矩阵M_loc中，只有两个不同的值：对角线元素均为一个值，非对角线元素均为一个值，
@@ -24,10 +30,17 @@ public:
      */
     Mesh &m;
 
-    // r 表示一个三角形对应几个offdiag中元素, 对于质量矩阵是1，刚度矩阵是3
-    FEMatrix(Mesh &mesh, int r) : Matrix(mesh.vertex_count(), mesh.vertex_count()), diag(mesh.vertex_count(), 0.0), m(mesh)
-    {   
-        offdiag.resize(r * mesh.triangle_count());
+    // FEMType表示矩阵的类型是质量还是刚度
+    FEMatrix(Mesh &mesh, FEMType fem_type) : Matrix(mesh.vertex_count(), mesh.vertex_count()), diag(mesh.vertex_count(), 0.0), m(mesh), femtype(fem_type)
+    {
+        if (femtype == P1_Mass)
+        {
+            offdiag.resize(mesh.triangle_count());
+        }
+        else if (femtype == P1_Stiffness)
+        {
+            offdiag.resize(3 * mesh.triangle_count());
+        }
         offdiag.setAll(0);
     }
     ~FEMatrix() = default;
@@ -35,32 +48,76 @@ public:
     void MVP(const Vec &x, Vec &y) const;
 };
 
-void FEMatrix::MVP(const Vec &x, Vec &y) const
-// 按照刚度矩阵的特点进行计算，质量矩阵可以被加到刚度矩阵中
+void MVP_P1_Mass(const FEMatrix &M, const Vec &x, Vec &y)
 {
     y.setAll(0);
 
     // 先计算对角线
-    for (int i = 0; i < rows; ++i)
+    for (int i = 0; i < M.rows; ++i)
     {
-        y[i] = diag[i] * x[i];
+        y[i] = M.diag[i] * x[i];
     }
 
     // 根据三角形依次计算非对角线
-    for (size_t t = 0; t < m.triangle_count(); ++t)
+    for (size_t t = 0; t < M.m.triangle_count(); ++t)
     {
-        uint32_t a = m.indices[3 * t];
-        uint32_t b = m.indices[3 * t + 1];
-        uint32_t c = m.indices[3 * t + 2];
+        uint32_t a = M.m.indices[3 * t];
+        uint32_t b = M.m.indices[3 * t + 1];
+        uint32_t c = M.m.indices[3 * t + 2];
+
+        // 每个三角形仅对应offdiag中的一个元素，但
+        double val = M.offdiag[t];
+
+        y[a] += val * x[b];
+        y[b] += val * x[a];
+        y[a] += val * x[c];
+        y[c] += val * x[a];
+        y[b] += val * x[c];
+        y[c] += val * x[b];
+        // 同时还有下三角的部分
+    }
+}
+
+void MVP_P1_Sniffness(const FEMatrix &M, const Vec &x, Vec &y)
+{
+    y.setAll(0);
+
+    // 先计算对角线
+    for (int i = 0; i < M.rows; ++i)
+    {
+        y[i] = M.diag[i] * x[i];
+    }
+
+    // 根据三角形依次计算非对角线
+    for (size_t t = 0; t < M.m.triangle_count(); ++t)
+    {
+        uint32_t a = M.m.indices[3 * t];
+        uint32_t b = M.m.indices[3 * t + 1];
+        uint32_t c = M.m.indices[3 * t + 2];
 
         // 按照AB, AC, BC的顺序存储非对角线元素
         // 因此是a行b列，a行c列，b行c列的顺序
-        y[a] += offdiag[3 * t + 0] * x[b];
-        y[b] += offdiag[3 * t + 0] * x[a];
-        y[a] += offdiag[3 * t + 1] * x[c];
-        y[c] += offdiag[3 * t + 1] * x[a];
-        y[b] += offdiag[3 * t + 2] * x[c];
-        y[c] += offdiag[3 * t + 2] * x[b];
+        y[a] += M.offdiag[3 * t + 0] * x[b];
+        y[b] += M.offdiag[3 * t + 0] * x[a];
+        y[a] += M.offdiag[3 * t + 1] * x[c];
+        y[c] += M.offdiag[3 * t + 1] * x[a];
+        y[b] += M.offdiag[3 * t + 2] * x[c];
+        y[c] += M.offdiag[3 * t + 2] * x[b];
         // 同时还有下三角的部分
+    }
+}
+
+void FEMatrix::MVP(const Vec &x, Vec &y) const
+// 按照根据不同的FEMType计算
+{
+    switch (femtype)
+    {
+    case P1_Mass:
+        MVP_P1_Mass(*this, x, y);
+        break;
+    case P1_Stiffness:
+        MVP_P1_Sniffness(*this, x, y);
+    default:
+        break;
     }
 }
