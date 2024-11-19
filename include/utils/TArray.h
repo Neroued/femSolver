@@ -50,7 +50,6 @@ public:
     // 向量除法赋值：this /= scalar
     void divideInPlace(const T scalar);
 
-
     // 声明为友元函数，需要显示声明为模板
     template <typename U>
     friend TArray<U> operator*(const TArray<U> &arr, const U scalar);
@@ -69,6 +68,7 @@ public:
     T *erase(T *pos);            // 删除指定位置的元素
     T *erase(T *first, T *last); // 删除指定范围的元素
     void setAll(const T &value); // 将全部元素设置为value
+    T sum();
 
     // 有关线性代数的方法
     T norm() const;
@@ -579,4 +579,15 @@ inline void blas_axpy(const T &a, const TArray<T> &x, const TArray<T> &y)
     {
         y.data[i] += a * x.data[i];
     }
+}
+
+template <typename T>
+T TArray<T>::sum()
+{
+    T s = 0;
+    for (size_t i = 0; i < size; ++i)
+    {
+        s += data[i];
+    }
+    return s;
 }

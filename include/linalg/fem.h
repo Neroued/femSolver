@@ -7,6 +7,8 @@
 #include <iostream>
 #include <timer.h>
 #include <Mesh.h>
+#include <CSRMatrix.h>
+#include <vector>
 
 // 求解- \Delta u + u = f
 
@@ -129,5 +131,151 @@ void addMassToStiffness(FEMatrix &S, FEMatrix &M)
         S.offdiag[3 * i + 0] += M.offdiag[i];
         S.offdiag[3 * i + 1] += M.offdiag[i];
         S.offdiag[3 * i + 2] += M.offdiag[i];
+    }
+}
+
+/*-------------------使用CSR矩阵建立质量和刚度矩阵-------------------*/
+void buildMassMatrix(CSRMatrix &M)
+/* 根据网格建立质量矩阵
+ * 对于每一个三角形，
+ * 主对角线元素为 |ABC|/6 , 次对角线元素为 |ABC|/12
+ * diag和offdiag均有n个元素
+ * diag直接存储对角线元素
+ * offdiag由于局部质量矩阵偏离对角线的元素仅有一种，因此每一个三角形仅增加一个元素
+ */
+{
+    Mesh &mesh = M.mesh;
+    // 根据每个三角形进行计算
+    size_t idx;
+    size_t offset;
+    int len;
+#pragma omp parallel for shared(M) private(offset, len, idx)
+    for (size_t t = 0; t < mesh.triangle_count(); ++t)
+    {
+        uint32_t a = mesh.indices[3 * t + 0];
+        uint32_t b = mesh.indices[3 * t + 1];
+        uint32_t c = mesh.indices[3 * t + 2];
+
+        Vec3 A = mesh.vertices[a];
+        Vec3 B = mesh.vertices[b];
+        Vec3 C = mesh.vertices[c];
+
+        Vec3 AB = B - A;
+        Vec3 AC = C - A;
+
+        // 局部质量矩阵，9个元素，其中只有2个不同的值, 第一个值为对角线元素，第二个值为非对角线元素
+        double Mloc[2];
+        massLoc(AB, AC, Mloc);
+
+        std::vector<uint32_t> triangle = {a, b, c};
+
+        for (uint32_t current_vtx : triangle)
+        {
+            for (uint32_t current_row : triangle)
+            {
+                offset = M.row_offset[current_row];
+                len = M.row_offset[current_row + 1] - offset;
+                // 找出当前顶点对应的elm_idx是第几个
+                for (idx = 0; idx < len; ++idx)
+                {
+                    if (current_vtx == M.elm_idx[offset + idx])
+                    {
+                        break;
+                    }
+                }
+                // 将对应的elements的值进行更新
+                if (current_row == current_vtx)
+                {
+#pragma omp atomic
+                    M.elements[offset + idx] += Mloc[0];
+                }
+                else
+                {
+#pragma omp atomic
+                    M.elements[offset + idx] += Mloc[1];
+                }
+            }
+        }
+    }
+}
+
+void buildStiffnessMatrix(CSRMatrix &S)
+/* 根据网格建立刚度矩阵
+ * 与质量矩阵区别在于
+ * 局部刚度矩阵有6个不同元素，因此每个三角形需要占用三个offdiag的空间
+ */
+{
+    Mesh &mesh = S.mesh;
+    size_t idx;
+    size_t offset;
+    int len;
+    int diag;
+#pragma omp parallel for shared(S) private(offset, len, idx, diag)
+    for (size_t t = 0; t < mesh.triangle_count(); ++t)
+    {
+        uint32_t a = mesh.indices[3 * t + 0];
+        uint32_t b = mesh.indices[3 * t + 1];
+        uint32_t c = mesh.indices[3 * t + 2];
+
+        Vec3 A = mesh.vertices[a];
+        Vec3 B = mesh.vertices[b];
+        Vec3 C = mesh.vertices[c];
+
+        Vec3 AB = B - A;
+        Vec3 AC = C - A;
+
+        // 局部刚度矩阵，9个元素，其中有6个不同的值, 前三个依次为对角线元素，后三个依次为S_AB, S_AC, S_BC
+        double Sloc[6];
+        stiffLoc(AB, AC, Sloc);
+
+        diag = 0;
+        std::vector<uint32_t> triangle = {a, b, c};
+
+        for (uint32_t current_vtx : triangle)
+        {
+            for (uint32_t current_row : triangle)
+            {
+                offset = S.row_offset[current_row];
+                len = S.row_offset[current_row + 1] - offset;
+                // 找出当前顶点对应的elm_idx是第几个
+                for (idx = 0; idx < len; ++idx)
+                {
+                    if (current_vtx == S.elm_idx[offset + idx])
+                    {
+                        break;
+                    }
+                }
+                // 将对应的elements的值进行更新
+                if (current_row == current_vtx)
+                {
+#pragma omp atomic
+                    S.elements[offset + idx] += Sloc[diag++];
+                }
+                else if ((current_row == a || current_vtx == a) && (current_row == b || current_vtx == b))
+                {
+#pragma omp atomic
+                    S.elements[offset + idx] += Sloc[3];
+                }
+                else if ((current_row == a || current_vtx == a) && (current_row == c || current_vtx == c))
+                {
+#pragma omp atomic
+                    S.elements[offset + idx] += Sloc[4];
+                }
+                else if ((current_row == b || current_vtx == b) && (current_row == c || current_vtx == c))
+                {
+#pragma omp atomic
+                    S.elements[offset + idx] += Sloc[5];
+                }
+            }
+        }
+    }
+}
+
+void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
+// 将质量矩阵加到刚度矩阵，方便定义和使用统一的MVP
+{
+    for (size_t t = 0; t < S.elements.size; ++t)
+    {
+        S.elements[t] += M.elements[t];
     }
 }

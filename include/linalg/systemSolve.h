@@ -4,6 +4,123 @@
 #include <COOMatrix.h>
 #include <iostream>
 
+bool decentGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &Ar, double *rel_error, int *iter, double tol, int iterMax = 1000)
+/* Input:
+ * Matrix &A : 线性方程组的矩阵
+ * Vec &B: 右端项
+ * Vec &u: 解，大小需要合适
+ * Vec &r: 存放residue的向量
+ * Vec &Ar: 存放Ar的向量
+ * double *rel_error: 返回最终结果的误差
+ * int *iter: 返回迭代的次数
+ * double tol: 容许误差
+ * int iterMax: 最大迭代次数
+ */
+{
+    int n = A.rows;
+    *iter = 0;
+
+    // Au = M * u + S * u
+    Vec Au(n);
+    A.MVP(u, Au);
+
+    // r = B - Au
+    blas_axpby(1.0, B, -1.0, Au, r);
+
+    double alpha;
+    *rel_error = r.norm();
+    while (*rel_error > tol && (*iter)++ < iterMax)
+    {
+        // calcute alpha
+
+        // Ar = M * r + S * r
+        A.MVP(r, Ar);
+
+        double denominator = dot(Ar, r);
+        if (denominator == 0)
+        {
+            throw std::runtime_error("Division by zero in alpha calculation: matrix might be singular or ill-conditioned.");
+        }
+
+        // alpha = (r^T * r) / (r^T * A * r)
+        alpha = (*rel_error) * (*rel_error) / denominator;
+
+        // update u and r
+        // u = u + alpha * r
+        blas_axpy(alpha, r, u);
+        // blas_axpby(1.0, u, alpha, r, u);
+        // r = r - alpha * A * r
+        blas_axpy(-alpha, Ar, r);
+        // blas_axpby(1.0, r, -alpha, Ar, r);
+        *rel_error = r.norm();
+    }
+
+    if ((*iter) >= iterMax && r.norm() >= tol)
+    {
+        std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
+        return false;
+    }
+    else
+    {
+        std::cout << "decentGraident: Converge in " << *iter << " iters" << std::endl;
+        return true;
+    }
+}
+
+double cg_iter_once(const Matrix &A, Vec &u, Vec &r, Vec &p, Vec &Ap, double r2)
+{
+    int n = A.rows;
+
+    A.MVP(p, Ap);
+    double alpha = r2 / dot(p, Ap);
+
+    blas_axpy(alpha, p, u);
+    // blas_axpby(1.0, u, alpha, p, u);
+    blas_axpy(-alpha, Ap, r);
+    // blas_axpby(1.0, r, -alpha, Ap, r);
+
+    double r2_new = dot(r, r);
+
+    double beta = r2_new / r2;
+    blas_axpby(1.0, r, beta, p, p);
+    return r2_new;
+}
+
+bool conjugateGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &p, Vec &Ap, double *rel_error, int *iter, double tol, int iterMax = 1000)
+{
+    int n = A.rows;
+
+    double b2 = dot(B, B);
+    // Au = M * u + S * u
+
+    A.MVP(u, r);
+    blas_axpby(1.0, B, -1.0, r, r);
+
+    p = r; // initial search direction
+
+    *iter = 0;
+    double r2 = dot(r, r);
+    *rel_error = sqrt(r2 / b2);
+
+    while (((*iter)++ < iterMax) && (*rel_error > tol))
+    {
+        r2 = cg_iter_once(A, u, r, p, Ap, r2);
+        *rel_error = sqrt(r2 / b2);
+        // std::cout << sqrt(r2 / b2) << std::endl;
+    }
+
+    if ((*iter) >= iterMax && *rel_error >= tol)
+    {
+        std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
+        return false;
+    }
+    else
+    {
+        // std::cout << "conjugateGradient: Converge in " << *iter << " iters" << std::endl;
+        return true;
+    }
+}
+
 /* Since S + M is symmetric and positive definite we can solve
  * the system by the gradient descent method. This is by far
  * not the best method for ill conditionned matrices, but the point
@@ -79,69 +196,6 @@ bool decentGradientSolve(COOMatrix &M, COOMatrix &S, Vec &B, Vec &u, double tol,
     else
     {
         std::cout << "decentGraident: Converge in " << iter << " iters" << std::endl;
-        return true;
-    }
-}
-
-bool decentGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &Ar, double *rel_error, int *iter, double tol, int iterMax = 1000)
-/* Input:
- * Matrix &A : 线性方程组的矩阵
- * Vec &B: 右端项
- * Vec &u: 解，大小需要合适
- * Vec &r: 存放residue的向量
- * Vec &Ar: 存放Ar的向量
- * double *rel_error: 返回最终结果的误差
- * int *iter: 返回迭代的次数
- * double tol: 容许误差
- * int iterMax: 最大迭代次数
- */
-{
-    int n = A.rows;
-    *iter = 0;
-
-    // Au = M * u + S * u
-    Vec Au(n);
-    A.MVP(u, Au);
-
-    // r = B - Au
-    blas_axpby(1.0, B, -1.0, Au, r);
-
-    double alpha;
-    *rel_error = r.norm();
-    while (*rel_error > tol && (*iter)++ < iterMax)
-    {
-        // calcute alpha
-
-        // Ar = M * r + S * r
-        A.MVP(r, Ar);
-
-        double denominator = dot(Ar, r);
-        if (denominator == 0)
-        {
-            throw std::runtime_error("Division by zero in alpha calculation: matrix might be singular or ill-conditioned.");
-        }
-
-        // alpha = (r^T * r) / (r^T * A * r)
-        alpha = (*rel_error) * (*rel_error) / denominator;
-
-        // update u and r
-        // u = u + alpha * r
-        blas_axpy(alpha, r, u);
-        // blas_axpby(1.0, u, alpha, r, u);
-        // r = r - alpha * A * r
-        blas_axpy(-alpha, Ar, r);
-        // blas_axpby(1.0, r, -alpha, Ar, r);
-        *rel_error = r.norm();
-    }
-
-    if ((*iter) >= iterMax && r.norm() >= tol)
-    {
-        std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
-        return false;
-    }
-    else
-    {
-        std::cout << "decentGraident: Converge in " << *iter << " iters" << std::endl;
         return true;
     }
 }
@@ -252,59 +306,6 @@ bool conjugateGradientSolve(COOMatrix &M, COOMatrix &S, Vec &B, Vec &u, double t
     else
     {
         std::cout << "conjugateGradient: Converge in " << iter << " iters" << std::endl;
-        return true;
-    }
-}
-
-double cg_iter_once(const Matrix &A, Vec &u, Vec &r, Vec &p, Vec &Ap, double r2)
-{
-    int n = A.rows;
-
-    A.MVP(p, Ap);
-    double alpha = r2 / dot(p, Ap);
-
-    blas_axpy(alpha, p, u);
-    // blas_axpby(1.0, u, alpha, p, u);
-    blas_axpy(-alpha, Ap, r);
-    // blas_axpby(1.0, r, -alpha, Ap, r);
-
-    double r2_new = dot(r, r);
-
-    double beta = r2_new / r2;
-    blas_axpby(1.0, r, beta, p, p);
-    return r2_new;
-}
-
-bool conjugateGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &p, Vec &Ap, double *rel_error, int *iter, double tol, int iterMax = 1000)
-{
-    int n = A.rows;
-
-    double b2 = dot(B, B);
-    // Au = M * u + S * u
-
-    A.MVP(u, r);
-    blas_axpby(1.0, B, -1.0, r, r);
-
-    p = r; // initial search direction
-
-    *iter = 0;
-    double r2 = dot(r, r);
-    *rel_error = sqrt(r2 / b2);
-
-    while (((*iter)++ < iterMax) && (*rel_error > tol))
-    {
-        r2 = cg_iter_once(A, u, r, p, Ap, r2);
-        *rel_error = sqrt(r2 / b2);
-    }
-
-    if ((*iter) >= iterMax && *rel_error >= tol)
-    {
-        std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
-        return false;
-    }
-    else
-    {
-        std::cout << "conjugateGradient: Converge in " << *iter << " iters" << std::endl;
         return true;
     }
 }

@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     Vec Ap(n);
 
     fill_rhs(mesh, f);
-    std::cout << f << std::endl;
+    // std::cout << f << std::endl;
 
     M.MVP(f, B);
     // for (size_t i = 0; i < M.diag.size; ++i)
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     //     B[i] = f[i] * M.diag[i];
     // }
 
-    std::cout << B << std::endl;
+    // std::cout << B << std::endl;
     //  f.setAll(1.0);
     double rel_error;
     int iter;

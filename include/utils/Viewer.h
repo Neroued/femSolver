@@ -12,6 +12,16 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <CSRMatrix.h>
+#include <NavierStokesSolver.h>
+#include <time.h>
+#include <thread>
+#include <chrono>
+#include <atomic>
+#include <mutex>
+
+static void mouseCallback(GLFWwindow *window, double xpos, double ypos);
+static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
 class Viewer
 {
@@ -24,19 +34,32 @@ public:
     void setupMesh(const Mesh &mesh);          // 显示 Mesh 网格
     void setupFEMData(const FEMData &femdata); // 显示FEMData
     void runFEMData();
+    void setupNS(NavierStokesSolver &Solver);
+    void runNS(double dt, double nu);
 
-private:
     GLFWwindow *window;
     unsigned int VAO, VBO, EBO, CBO; // VAO: 顶点数组对象; VBO: 顶点缓冲对象; CBO: 颜色缓冲对象; EBO: 索引缓冲对象
     unsigned int shaderProgram;
     int width, height;
     const Mesh *currentMesh;
     const FEMData *currentfemdata;
+    NavierStokesSolver *currentNS;
+
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);    // 相机位置
+    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 目标位置
+    glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);     // 上方向
+
+    bool isMousePressed = false;              // 鼠标是否被按下
+    double lastX = 0.0f, lastY = 0.0f;        // 上一次鼠标位置
+    float yaw = -90.0f;                       // 偏航角（初始朝向 -Z 轴）
+    float pitch = 0.0f;                       // 俯仰角
+    float sensitivity = 0.15f;                // 鼠标灵敏度
+    float rotationX = 0.0f, rotationY = 0.0f; // 累积旋转角度
 
     void initializeShaders();
     std::string loadShaderSource(const char *filepath);
     unsigned int compileShader(unsigned int type, const std::string &source); // 编译着色器
-    std::vector<Vec3> generateColors();                                       // 生成颜色数据
+    std::vector<Vec3> generateColors(const Vec &u);                           // 生成颜色数据
     std::vector<Vec3> randomGenerateColors();
 };
 
@@ -58,6 +81,12 @@ Viewer::Viewer(int width, int height, const char *title) : width(width), height(
         throw std::runtime_error("Failed to create GLFW window");
     }
     glfwMakeContextCurrent(window);
+    // 设置当前 Viewer 实例为窗口用户指针
+    glfwSetWindowUserPointer(window, this);
+
+    // 注册鼠标回调函数
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -254,7 +283,7 @@ void Viewer::setupFEMData(const FEMData &femdata)
     glEnableVertexAttribArray(0);
 
     // 生成颜色数据
-    std::vector<Vec3> colors = generateColors();
+    std::vector<Vec3> colors = generateColors(currentfemdata->u);
     glBindBuffer(GL_ARRAY_BUFFER, CBO);
     glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(Vec3), colors.data(), GL_STATIC_DRAW);
 
@@ -287,9 +316,8 @@ std::vector<Vec3> Viewer::randomGenerateColors()
     return colors;
 }
 
-std::vector<Vec3> Viewer::generateColors()
+std::vector<Vec3> Viewer::generateColors(const Vec &u)
 {
-    const Vec &u = currentfemdata->u;
     double u_min = *std::min_element(u.begin(), u.end());
     double u_max = *std::max_element(u.begin(), u.end());
     if (u_max == u_min)
@@ -364,5 +392,159 @@ void Viewer::runFEMData()
         // 交换缓冲区并处理事件
         glfwSwapBuffers(window);
         glfwPollEvents();
+    }
+}
+
+void Viewer::setupNS(NavierStokesSolver &Solver)
+{
+    currentNS = &Solver;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &CBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    // 设置顶点位置
+    const Mesh &meshnow = currentNS->mesh;
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, meshnow.vertex_count() * sizeof(Vec3), meshnow.vertices.data, GL_STATIC_DRAW);
+
+    /* glVertexAttribPointer： 配置 VAO 中的位置数据的解析方式。
+    参数：
+    0： 顶点属性索引（Location 0，对应顶点着色器中的位置属性）。
+    3： 每个顶点包含 3 个分量（x, y, z）。
+    GL_DOUBLE： 数据类型为 double。
+    GL_FALSE： 不需要归一化。
+    sizeof(Vec3)： 每个顶点的步长（即每个顶点数据的总大小）。
+    (void*)0： 顶点数据的起始偏移量，从缓冲区的起始位置开始。
+    glEnableVertexAttribArray(0)： 启用顶点属性 Location 0。*/
+    glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    // 生成颜色数据
+    std::vector<Vec3> colors = generateColors(currentNS->Omega);
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(Vec3), colors.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), (void *)0);
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshnow.triangle_count() * 3 * sizeof(uint32_t),
+                 meshnow.indices.data, GL_STATIC_DRAW);
+}
+
+void Viewer::runNS(double dt, double nu)
+{
+    // 颜色数据和线程同步相关变量
+    std::vector<Vec3> colors = generateColors(currentNS->Omega); // 初始颜色
+    std::mutex colorMutex;                                       // 保护颜色缓冲区
+    std::atomic<bool> isRunning(true);                           // 标志程序是否运行
+    std::atomic<bool> colorUpdated(false);                       // 标志颜色是否已更新
+
+    // 启动计算线程
+    std::thread computeThread([&]()
+                              {
+        while (isRunning) {
+            // 计算时间步
+            currentNS->timeStep(dt, nu);
+
+            // 生成新的颜色数据
+            std::vector<Vec3> newColors = generateColors(currentNS->Omega);
+
+            // 更新颜色数据（加锁保护）
+            {
+                std::lock_guard<std::mutex> lock(colorMutex);
+                colors = std::move(newColors);
+                colorUpdated = true;
+            }
+        } });
+
+    // 渲染线程
+    while (!glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+
+        // 获取当前时间，单位为秒
+        float timeValue = glfwGetTime();
+        float rotateSpeed = 0.5f;
+
+        // 如果颜色已更新，更新颜色缓冲区
+        if (colorUpdated)
+        {
+            std::lock_guard<std::mutex> lock(colorMutex);
+            glBindBuffer(GL_ARRAY_BUFFER, CBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size() * sizeof(Vec3), colors.data());
+            colorUpdated = false;
+        }
+
+        // 设置渲染矩阵
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-rotationY), glm::vec3(1.0f, 0.0f, 0.0f)); // 绕 X 轴旋转
+        model = glm::rotate(model, glm::radians(rotationX), glm::vec3(0.0f, 1.0f, 0.0f));  // 绕 Y 轴旋转
+        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.5f));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
+
+        int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+        int isEdgeModeLoc = glGetUniformLocation(shaderProgram, "isEdgeMode");
+        int isFEMDataLoc = glGetUniformLocation(shaderProgram, "isFEMData");
+
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform1i(isEdgeModeLoc, GL_FALSE);
+        glUniform1i(isFEMDataLoc, GL_TRUE);
+
+        // 绘制网格
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, currentNS->mesh.triangle_count() * 3, GL_UNSIGNED_INT, 0);
+
+        // 交换缓冲区并处理事件
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    // 停止计算线程
+    isRunning = false;
+    computeThread.join();
+}
+
+// 鼠标移动回调函数
+static void mouseCallback(GLFWwindow *window, double xpos, double ypos)
+{
+    Viewer *viewer = static_cast<Viewer *>(glfwGetWindowUserPointer(window));
+    if (!viewer || !viewer->isMousePressed)
+        return;
+
+    float xoffset = xpos - viewer->lastX;
+    float yoffset = viewer->lastY - ypos; // 鼠标 Y 方向反转
+    viewer->lastX = xpos;
+    viewer->lastY = ypos;
+
+    // 更新旋转角度
+    viewer->rotationX += xoffset * viewer->sensitivity;
+    viewer->rotationY += yoffset * viewer->sensitivity;
+}
+
+// 鼠标按键回调函数
+static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    Viewer *viewer = static_cast<Viewer *>(glfwGetWindowUserPointer(window));
+    if (!viewer)
+        return;
+
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        viewer->isMousePressed = true;
+        glfwGetCursorPos(window, &viewer->lastX, &viewer->lastY);
+    }
+    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
+        viewer->isMousePressed = false;
     }
 }
