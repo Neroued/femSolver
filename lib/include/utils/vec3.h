@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <cmath>
 #include <functional>
+#include <iostream>
 
 template <typename T>
 struct TVec3

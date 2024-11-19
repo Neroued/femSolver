@@ -1,14 +1,13 @@
 #include <iostream>
 #include <CSRMatrix.h>
 #include <Mesh.h>
-#include <cube.h>
-#include <sphere.h>
 #include <fem.h>
 #include <time.h>
 #include <systemSolve.h>
 #include <omp.h>
 #include <string.h>
 #include <cmath>
+#include <timer.h>
 
 void printinfo(CSRMatrix &csr);
 

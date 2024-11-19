@@ -18,3 +18,14 @@ public:
     Mesh() = default;
     Mesh(int subdiv, MeshType meshtype);
 };
+
+#ifndef CUBE
+#define CUBE 1
+#endif
+
+#ifndef SPHERE
+#define SPHERE 2
+#endif
+
+int load_cube(Mesh &m, const int subdiv);
+int load_sphere(Mesh &m, const int subdiv);

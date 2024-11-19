@@ -1,7 +1,5 @@
 #include <Mesh.h>
 #include <Viewer.h>
-#include <cube.h>
-#include <sphere.h>
 #include <iostream>
 #include <cstring>
 
@@ -46,7 +44,7 @@ int main(int argc, char *argv[])
     viewer.initialize();
 
     viewer.setupMesh(mesh); // 设置要显示的网格
-    viewer.runMesh();             // 开始渲染
+    viewer.runMesh();       // 开始渲染
 
     return 0;
 }

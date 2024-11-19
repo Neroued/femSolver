@@ -1,26 +1,11 @@
-#pragma once
-
+#include <FEMdata.h>
 #include <TArray.h>
 #include <FEMatrix.h>
 #include <Mesh.h>
 #include <vec3.h>
-#include <cube.h>
-#include <sphere.h>
 #include <fem.h>
 #include <systemSolve.h>
 #include <timer.h>
-
-class FEMData
-// 存储求解-\Delta u + u = f的相关结果
-{
-public:
-    Mesh mesh;
-    FEMatrix A;
-    Vec u;
-    Vec B;
-
-    FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos));
-};
 
 FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
 : mesh(subdiv, meshtype), A(mesh, FEMatrix::P1_Stiffness), u(mesh.vertex_count(), 0.0), B(mesh.vertex_count())

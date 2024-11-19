@@ -2,8 +2,6 @@
 #include <Mesh.h>
 #include <FEMatrix.h>
 #include <fem.h>
-#include <cube.h>
-#include <sphere.h>
 #include <systemSolve.h>
 #include <timer.h>
 #include <string.h>

@@ -1,16 +1,10 @@
-#pragma once
-
+#include <fem.h>
 #include <vec3.h>
 #include <TArray.h>
 #include <FEMatrix.h>
-#include <systemSolve.h>
-#include <iostream>
-#include <timer.h>
-#include <Mesh.h>
 #include <CSRMatrix.h>
+#include <Mesh.h>
 #include <vector>
-
-// 求解- \Delta u + u = f
 
 static void massLoc(const Vec3 &AB, const Vec3 &AC, double *Mloc);  // 根据输入两个向量代表的三角形计算局部质量矩阵
 static void stiffLoc(const Vec3 &AB, const Vec3 &AC, double *Sloc); // 同上，计算刚度矩阵
@@ -136,13 +130,6 @@ void addMassToStiffness(FEMatrix &S, FEMatrix &M)
 
 /*-------------------使用CSR矩阵建立质量和刚度矩阵-------------------*/
 void buildMassMatrix(CSRMatrix &M)
-/* 根据网格建立质量矩阵
- * 对于每一个三角形，
- * 主对角线元素为 |ABC|/6 , 次对角线元素为 |ABC|/12
- * diag和offdiag均有n个元素
- * diag直接存储对角线元素
- * offdiag由于局部质量矩阵偏离对角线的元素仅有一种，因此每一个三角形仅增加一个元素
- */
 {
     Mesh &mesh = M.mesh;
     // 根据每个三角形进行计算
@@ -200,10 +187,6 @@ void buildMassMatrix(CSRMatrix &M)
 }
 
 void buildStiffnessMatrix(CSRMatrix &S)
-/* 根据网格建立刚度矩阵
- * 与质量矩阵区别在于
- * 局部刚度矩阵有6个不同元素，因此每个三角形需要占用三个offdiag的空间
- */
 {
     Mesh &mesh = S.mesh;
     size_t idx;
@@ -274,6 +257,7 @@ void buildStiffnessMatrix(CSRMatrix &S)
 void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
 // 将质量矩阵加到刚度矩阵，方便定义和使用统一的MVP
 {
+    #pragma omp parallel for
     for (size_t t = 0; t < S.elements.size; ++t)
     {
         S.elements[t] += M.elements[t];

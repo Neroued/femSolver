@@ -1,25 +1,13 @@
-#pragma once
+#include <CSRMatrix.h>
 
 #include <Mesh.h>
-#include <Matrix.h>
+#include <iostream>
 #include <TArray.h>
 #include <vector>
-#include <iostream>
-
-class CSRMatrix : public Matrix
-// 按行存储的稀疏矩阵, 存储每行不为零的元素
-{
-public:
-    Vec elements;
-    TArray<size_t> row_offset;
-    TArray<size_t> elm_idx;
-    Mesh &mesh;
-
-    CSRMatrix(Mesh &m); // 根据Mesh中每个顶点之间的连通性建立
-    ~CSRMatrix() = default;
-
-    void MVP(const Vec &x, Vec &y) const;
-};
+#include <algorithm>
+#include <stdexcept>
+#include <omp.h>
+#include <cstdint>
 
 CSRMatrix::CSRMatrix(Mesh &m) : Matrix(m.vertex_count(), m.vertex_count()), row_offset(rows + 1, 1), mesh(m)
 {

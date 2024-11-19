@@ -30,10 +30,10 @@ def lu_decomposition(A):
     return L, U
 
 # 示例测试
-A = np.array([[4, 3, 0, 1],
-              [3, 3, 2, 0],
-              [0, 2, 3, 0],
-              [1, 0, 3, 6]], dtype=float)
+A = np.array([[4, 0, 0, 7],
+              [0, 3, 4, 0],
+              [0, 4, 3, 0],
+              [7, 0, 0, 6]], dtype=float)
 
 L, U = lu_decomposition(A)
 print("矩阵 A:")

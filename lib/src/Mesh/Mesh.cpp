@@ -1,14 +1,10 @@
-#pragma once
-
 #include <Mesh.h>
-#include <vector>
+#include <TArray.h>
+#include <vec3.h>
+#include <cstdint>
 #include <timer.h>
 #include <iostream>
 #include <unordered_map>
-
-#ifndef CUBE
-#define CUBE 1
-#endif
 
 /* 生成立方体网格, 中心为原点，边长为2
  * 对于有n个子分割的网格
@@ -153,4 +149,32 @@ int load_cube(Mesh &m, const int subdiv)
     std::cout << "生成三角形用时: " << timer.elapsedMilliseconds() << "ms\n";
 
     return 0;
+}
+
+int load_sphere(Mesh &m, int subdiv)
+{
+    load_cube(m, subdiv);
+
+    Timer t;
+    t.start();
+    for (int i = 0; i < (int)m.vertex_count(); ++i)
+    {
+        m.vertices[i] = normalized(m.vertices[i]);
+    }
+    t.stop();
+    std::cout << "生成球面用时: " << t.elapsedMilliseconds() << "ms" << std::endl;
+    ;
+    return 0;
+}
+
+Mesh::Mesh(int subdiv, MeshType meshtype)
+{
+    if (meshtype == CUBE)
+    {
+        load_cube(*this, subdiv);
+    }
+    else if (meshtype == SPHERE)
+    {
+        load_sphere(*this, subdiv);
+    }
 }

@@ -45,7 +45,7 @@ public:
     const FEMData *currentfemdata;
     NavierStokesSolver *currentNS;
 
-    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);    // 相机位置
+    glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 4.5f);    // 相机位置
     glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f); // 目标位置
     glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);     // 上方向
 
@@ -213,16 +213,16 @@ void Viewer::runMesh()
 
         glUseProgram(shaderProgram);
 
-        // 获取当前时间，单位为秒
-        float timeValue = glfwGetTime();
-        float rotateSpeed = 0.5f;
+        /// 通过旋转计算相机位置
+        float radius = 4.5f; // 距离目标点的半径
+        float camX = radius * cos(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+        float camY = -radius * sin(glm::radians(rotationY));
+        float camZ = radius * sin(glm::radians(rotationX)) * cos(glm::radians(rotationY));
 
-        // 设置模型矩阵，随时间旋转
+        cameraPos = glm::vec3(camX, camY, camZ);
+        glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, 30.0f, glm::vec3(0.0f, -0.5f, 1.0f)); // 绕 y 轴旋转
-        // model = glm::rotate(model, glm::radians(32.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // 例如绕 x 轴旋转
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.5f));                    // 视图矩阵，将相机向后移动
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f); // 透视投影矩阵
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
 
         int modelLoc = glGetUniformLocation(shaderProgram, "model");
         int viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -357,15 +357,16 @@ void Viewer::runFEMData()
 
         glUseProgram(shaderProgram);
 
-        // 获取当前时间，单位为秒
-        float timeValue = glfwGetTime();
-        float rotateSpeed = 0.5f;
+        // 通过旋转计算相机位置
+        float radius = 4.5f; // 距离目标点的半径
+        float camX = radius * cos(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+        float camY = -radius * sin(glm::radians(rotationY));
+        float camZ = radius * sin(glm::radians(rotationX)) * cos(glm::radians(rotationY));
 
-        // 设置模型矩阵，随时间旋转
+        cameraPos = glm::vec3(camX, camY, camZ);
+        glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, timeValue * rotateSpeed, glm::vec3(0.0f, -0.5f, 1.0f));                 // 绕 y 轴旋转
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.5f));                    // 视图矩阵
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f); // 投影矩阵
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
 
         // 获取 Uniform 变量位置
         int modelLoc = glGetUniformLocation(shaderProgram, "model");
@@ -481,11 +482,15 @@ void Viewer::runNS(double dt, double nu)
             colorUpdated = false;
         }
 
-        // 设置渲染矩阵
+        // 通过旋转计算相机位置
+        float radius = 4.5f; // 距离目标点的半径
+        float camX = radius * cos(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+        float camY = -radius * sin(glm::radians(rotationY));
+        float camZ = radius * sin(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+
+        cameraPos = glm::vec3(camX, camY, camZ);
+        glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(-rotationY), glm::vec3(1.0f, 0.0f, 0.0f)); // 绕 X 轴旋转
-        model = glm::rotate(model, glm::radians(rotationX), glm::vec3(0.0f, 1.0f, 0.0f));  // 绕 Y 轴旋转
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -4.5f));
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
 
         int modelLoc = glGetUniformLocation(shaderProgram, "model");
