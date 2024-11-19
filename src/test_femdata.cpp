@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        std::cout << "Usage: " << argv[0] << " {cube/sphere{} subdiv" << std::endl;
+        std::cout << "Usage: " << argv[0] << " {cube/sphere} subdiv" << std::endl;
         return -1;
     }
     Timer t;
