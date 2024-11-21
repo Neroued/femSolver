@@ -22,3 +22,4 @@ target_include_directories(Lib PUBLIC
 
 find_package(OpenMP REQUIRED)
 target_compile_options(Lib PRIVATE -O3 -ffast-math -fopenmp)
+

@@ -5,8 +5,9 @@
 #include <timer.h>
 #include <cmath>
 #include <Viewer.h>
+#include <omp.h>
 
-static double test_f(Vec3 pos, double omega_0 = 1.0, double sigma = 1.0)
+static double test_f(const Vec3 &pos, double omega_0 = 1.0, double sigma = 1.0)
 {
     using namespace std;
 
@@ -14,19 +15,22 @@ static double test_f(Vec3 pos, double omega_0 = 1.0, double sigma = 1.0)
     double y = pos[1];
     double z = pos[2];
 
-    double dx = x;
-    double dy = y;
     double r_squared = z * z;
+    double theta = std::atan2(std::sqrt(x * x + y * y), z);
+    double omega;
+
+    // omega = 100 * z * std::exp(-50 * z * z) * (1 + 0.5 * cos(20 * theta));
 
     // 基于二维高斯分布生成涡量
-    double omega = omega_0 * std::exp(-r_squared / (2.0 * sigma * sigma)) * (1.0 + 0.5 * std::cos(20.0 * x * y) * z);
+    // omega = omega_0 * std::exp(-r_squared / (2.0 * sigma * sigma)) * (1.0 + 0.5 * std::cos(10.0 * theta) * z);
 
+    omega = 100 * z *std::exp(-50 * r_squared) * (1.0 + 0.5 * std::cos(20 * theta));
     return omega;
 }
 
-
 int main(int argc, char *argv[])
 {
+    omp_set_num_threads(4);
     Timer t;
     t.start();
     int subdiv;
@@ -38,16 +42,12 @@ int main(int argc, char *argv[])
     }
     else if (argc == 2)
     {
-        // 如果参数数量为 2，显示用法提示信息
         std::cerr << "Usage: " << argv[0] << " {cube/sphere} subdiv " << std::endl;
         return 0;
     }
     else if (argc > 2)
     {
-        // 获取细分参数并解析为整数
         subdiv = std::stoi(argv[2]);
-
-        // 根据第一个参数决定加载立方体或球体
         if (std::strcmp(argv[1], "cube") == 0)
         {
             mt = CUBE;
@@ -63,15 +63,16 @@ int main(int argc, char *argv[])
         }
     }
     NavierStokesSolver Solver(subdiv, mt);
-    for (size_t i = 0; i < Solver.mesh.vertex_count(); ++i)
+    for (size_t i = 0; i < Solver.Omega.size; ++i)
     {
-        Solver.Omega[i] = test_f(Solver.mesh.vertices[i], 1.0, 1.5);
+        Solver.Omega[i] = test_f(Solver.mesh.vertices[i], 0.5, 1.5);
     }
     Solver.setZeroMean(Solver.Omega);
+    std::cout << Solver.Omega.sum() << std::endl;
     int iter;
-    double dt = 0.1;
-    double nu = 1e-2;
-    Viewer viewer(800, 600, "NS Solver");
+    double dt = 0.005;
+    double nu = 1e-4;
+    Viewer viewer(1000, 800, "NS Solver");
     viewer.setupNS(Solver);
     viewer.runNS(dt, nu);
 

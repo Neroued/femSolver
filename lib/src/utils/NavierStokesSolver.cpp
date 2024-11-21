@@ -12,9 +12,10 @@ NavierStokesSolver::NavierStokesSolver(int subdiv, MeshType meshtype)
     : mesh(subdiv, meshtype), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0)
 {
     t = 0;
-    tol = 1e-5;
+    tol = 1e-6;
     buildMassMatrix(M);
     buildStiffnessMatrix(S);
+    vol = M.elements.sum();
 }
 
 void NavierStokesSolver::computeStream(int *iter)
@@ -22,24 +23,25 @@ void NavierStokesSolver::computeStream(int *iter)
     M.MVP(Omega, MOmega);
     MOmega.scaleInPlace(-1.0);
     double rel_error;
-
-    int iterMax = 100000;
+    int iterMax = 10000;
+    Psi.setAll(0.0);
     conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
 }
 
 void NavierStokesSolver::setZeroMean(Vec &x)
 {
-    double mean = x.sum() / (double)x.size;
+    M.MVP(x, p);
+    double s = p.sum();
     for (size_t t = 0; t < x.size; ++t)
     {
-        x[t] -= mean;
+        x[t] -= s / vol;
     }
 }
 
 void NavierStokesSolver::computeTransport()
 // 看不懂怎么算，问老师
 {
-    T.setAll(0);
+    T.setAll(0.0);
 
     for (size_t t = 0; t < mesh.triangle_count(); ++t)
     {
@@ -53,7 +55,7 @@ void NavierStokesSolver::computeTransport()
         T[c] += sum * (Psi[a] - Psi[b]);
     }
 
-    for (size_t t = 0; t < mesh.vertex_count(); ++t)
+    for (size_t t = 0; t < T.size; ++t)
     {
         T[t] *= 1.0 / 12;
     }
@@ -67,12 +69,12 @@ void NavierStokesSolver::timeStep(double dt, double nu)
     timer.start();
 
     computeStream(&iter1);
-
     computeTransport();
-    M.MVP(Omega, MOmega);
-    blas_axpby(1.0, MOmega, dt, T, MOmega);
+    M.MVP(Omega, p);
+    blas_axpby(1.0, p, dt, T, MOmega);
     // MOmega = MOmega + dt * T;
     blas_addMatrix(S, dt * nu, M, A);
+    // A = M + dt * nu * S
 
     conjugateGradientSolve(A, MOmega, Omega, r, p, Ap, &rel_error, &iter2, tol, 1000);
     setZeroMean(Omega);

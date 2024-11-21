@@ -46,6 +46,7 @@ public:
     ~FEMatrix() = default;
 
     void MVP(const Vec &x, Vec &y) const;
+    void print() const;
 };
 
 void MVP_P1_Mass(const FEMatrix &M, const Vec &x, Vec &y);

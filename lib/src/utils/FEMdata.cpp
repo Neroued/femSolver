@@ -1,6 +1,6 @@
 #include <FEMdata.h>
 #include <TArray.h>
-#include <FEMatrix.h>
+#include <CSRMatrix.h>
 #include <Mesh.h>
 #include <vec3.h>
 #include <fem.h>
@@ -8,27 +8,24 @@
 #include <timer.h>
 
 FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
-: mesh(subdiv, meshtype), A(mesh, FEMatrix::P1_Stiffness), u(mesh.vertex_count(), 0.0), B(mesh.vertex_count())
+    : mesh(subdiv, meshtype), A(mesh), u(mesh.vertex_count(), 0.0), B(mesh.vertex_count())
 {
     Timer t;
+    Vec b(mesh.vertex_count());
     for (size_t i = 0; i < mesh.vertex_count(); ++i)
     {
-        B[i] = func(mesh.vertices[i]);
+        b[i] = func(mesh.vertices[i]);
     }
-    
+
     t.start();
-    FEMatrix M(mesh, FEMatrix::P1_Mass);
+    CSRMatrix M(mesh);
     buildMassMatrix(M);
     buildStiffnessMatrix(A);
     addMassToStiffness(A, M);
     t.stop();
     std::cout << "建立矩阵耗时: " << t.elapsedMilliseconds() << "ms" << std::endl;
 
-    for (size_t i = 0; i < M.diag.size; ++i)
-    {
-        B[i] *= M.diag[i];
-    }
-
+    M.MVP(b, B);
     int n = mesh.vertex_count();
     double tol = 1e-6;
     int iter;
@@ -37,7 +34,7 @@ FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
     Vec r(n);
     Vec p(n);
     Vec Ap(n);
-    
+
     t.start();
     conjugateGradientSolve(A, B, u, r, p, Ap, &rel_error, &iter, tol, iterMax);
     t.stop();

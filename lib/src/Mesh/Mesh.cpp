@@ -27,12 +27,14 @@ int load_cube(Mesh &m, const int subdiv)
         int dir;  // 0:负方向, 1:正方向
     };
 
+
     std::vector<Face> faces = {{0, 0},
-                               {0, 1},
                                {1, 0},
-                               {1, 1},
                                {2, 0},
+                               {0, 1},
+                               {1, 1},
                                {2, 1}};
+    // 96534009
 
     int totalVertices = 6 * n * n;                // 重复顶点有6n^2个
     int uniqueVertices = 6 * subdiv * subdiv + 2; // 不重复的顶点有6 * subdiv^2 + 2个
@@ -48,9 +50,8 @@ int load_cube(Mesh &m, const int subdiv)
     int t = 0; // t 表示存在重复点的下标
     int p = 0; // p 表示不重复点的下标
 
-    float invSubdiv = 1.0f / subdiv; // 提前计算好减少浮点数除法
+    double invSubdiv = 1.0 / (double)subdiv; // 提前计算好减少浮点数除法
 
-    Vec3 z{-1, -1, -1};
     for (const Face &face : faces)
     {
         int axis = face.axis;
@@ -88,9 +89,9 @@ int load_cube(Mesh &m, const int subdiv)
                     dupToNoDupIndex[t] = p;
 
                     // 计算顶点的位置
-                    float fx = coords[0] * invSubdiv * 2.0f - 1.0f;
-                    float fy = coords[1] * invSubdiv * 2.0f - 1.0f;
-                    float fz = coords[2] * invSubdiv * 2.0f - 1.0f;
+                    double fx = coords[0] * invSubdiv * 2.0f - 1.0f;
+                    double fy = coords[1] * invSubdiv * 2.0f - 1.0f;
+                    double fz = coords[2] * invSubdiv * 2.0f - 1.0f;
 
                     m.vertices[p] = {fx, fy, fz};
 
@@ -133,8 +134,8 @@ int load_cube(Mesh &m, const int subdiv)
 
                 m.indices[t++] = v0;
                 m.indices[t++] = v1;
-                m.indices[t++] = v3;
-                m.indices[t++] = v0;
+                m.indices[t++] = v2;
+                m.indices[t++] = v1;
                 m.indices[t++] = v3;
                 m.indices[t++] = v2;
             }
@@ -157,13 +158,12 @@ int load_sphere(Mesh &m, int subdiv)
 
     Timer t;
     t.start();
-    for (int i = 0; i < (int)m.vertex_count(); ++i)
+    for (size_t i = 0; i < m.vertex_count(); ++i)
     {
         m.vertices[i] = normalized(m.vertices[i]);
     }
     t.stop();
     std::cout << "生成球面用时: " << t.elapsedMilliseconds() << "ms" << std::endl;
-    ;
     return 0;
 }
 

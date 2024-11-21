@@ -123,7 +123,7 @@ TArray<T>::TArray(const TArray<T> &other)        // 使用另一个TArray<T>对�
     }
     else
     {
-        data = new T[size];
+        data = new T[capacity];
         std::copy(other.data, other.data + size, data);
     }
 }
@@ -337,8 +337,7 @@ T TArray<T>::norm() const
     {
         res += data[i] * data[i];
     }
-
-    return sqrt(res);
+    return std::sqrt(res);
 }
 
 template <typename T>
@@ -349,7 +348,6 @@ T TArray<T>::norm2() const
     {
         res += data[i] * data[i];
     }
-
     return res;
 }
 
@@ -361,7 +359,7 @@ T dot(const TArray<T> &a, const TArray<T> &b)
         throw std::invalid_argument("Size mismatch: Cannot compute dot product for arrays of different sizes.");
     }
 
-    T res = T{}; // 确保初始化为零
+    T res = 0;
     for (size_t i = 0; i < a.size; ++i)
     {
         res += a[i] * b[i];
@@ -382,8 +380,17 @@ void TArray<T>::push_back(const T &t)
     // 首先检查容量是否足够
     if (size >= capacity)
     {
-        capacity = capacity ? 2 * capacity : 1; // 三元运算符，若capacity为true(即不为0)，则将容量翻倍；若为false(即初始为0)，则设置为1
-        data = static_cast<T *>(safe_realloc(data, capacity * sizeof(T)));
+        size_t new_capacity = capacity ? 2 * capacity : 1;
+        T *new_data = new T[new_capacity]; 
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            new_data[i] = std::move(data[i]);
+        }
+
+        delete[] data;
+        data = new_data;
+        capacity = new_capacity;
     }
     data[size++] = t;
 }
@@ -391,10 +398,17 @@ void TArray<T>::push_back(const T &t)
 template <typename T>
 void TArray<T>::resize(size_t s)
 {
-    // 首先检查容量是否足够
     if (s > capacity)
     {
-        data = static_cast<T *>(safe_realloc(data, s * sizeof(T)));
+        T *new_data = new T[s];
+
+        for (size_t i = 0; i < size; ++i)
+        {
+            new_data[i] = std::move(data[i]);
+        }
+
+        delete[] data;
+        data = new_data;
         capacity = s;
     }
     size = s;
@@ -572,7 +586,7 @@ inline void blas_axpby(const T &a, const TArray<T> &x, const T &b, const TArray<
 }
 
 template <typename T>
-inline void blas_axpy(const T &a, const TArray<T> &x, const TArray<T> &y)
+inline void blas_axpy(const T &a, const TArray<T> &x, TArray<T> &y)
 // y = ax + y
 {
     for (size_t i = 0; i < x.size; ++i)

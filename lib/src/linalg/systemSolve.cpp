@@ -68,8 +68,6 @@ bool decentGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &Ar, double *rel
 
 double cg_iter_once(const Matrix &A, Vec &u, Vec &r, Vec &p, Vec &Ap, double r2)
 {
-    int n = A.rows;
-
     A.MVP(p, Ap);
     double alpha = r2 / dot(p, Ap);
 
@@ -99,8 +97,6 @@ bool conjugateGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &p, Vec &Ap, 
  * int iterMax: 最大迭代次数
  */
 {
-    int n = A.rows;
-
     double b2 = dot(B, B);
     // Au = M * u + S * u
 

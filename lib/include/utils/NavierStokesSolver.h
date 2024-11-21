@@ -32,6 +32,7 @@ public:
     Vec Ap;
     double t; // 时间
     double tol;
+    double vol;
 
     NavierStokesSolver(int subdiv, MeshType meshtype);
     ~NavierStokesSolver() = default;

@@ -129,14 +129,54 @@ void addMassToStiffness(FEMatrix &S, FEMatrix &M)
 }
 
 /*-------------------使用CSR矩阵建立质量和刚度矩阵-------------------*/
+// 获取局部质量矩阵的值
+double get_Mloc_value(int i, int j, const double Mloc[2])
+{
+    if (i == j)
+        return Mloc[0]; // 对角线元素
+    else
+        return Mloc[1]; // 非对角线元素
+}
+
+// 构建顶点到局部索引的映射函数
+std::unordered_map<uint32_t, int> build_vertex_to_local_index(uint32_t a, uint32_t b, uint32_t c)
+{
+    return {
+        {a, 0},
+        {b, 1},
+        {c, 2}};
+}
+
+// 处理矩阵行的函数
+void process_mass_matrix_row(CSRMatrix &M, uint32_t current_row, int i,
+                             const std::unordered_map<uint32_t, int> &vertex_to_local_index,
+                             const double Mloc[2])
+{
+    size_t offset = M.row_offset[current_row];
+    size_t len = M.row_offset[current_row + 1] - offset;
+
+    for (size_t idx = 0; idx < len; ++idx)
+    {
+        uint32_t col = M.elm_idx[offset + idx];
+
+        // 检查列是否在当前三角形的顶点中
+        auto it = vertex_to_local_index.find(col);
+        if (it != vertex_to_local_index.end())
+        {
+            int j = it->second;
+            double value = get_Mloc_value(i, j, Mloc);
+
+#pragma omp atomic
+            M.elements[offset + idx] += value;
+        }
+    }
+}
+
 void buildMassMatrix(CSRMatrix &M)
 {
     Mesh &mesh = M.mesh;
-    // 根据每个三角形进行计算
-    size_t idx;
-    size_t offset;
-    int len;
-#pragma omp parallel for shared(M) private(offset, len, idx)
+
+#pragma omp parallel for
     for (size_t t = 0; t < mesh.triangle_count(); ++t)
     {
         uint32_t a = mesh.indices[3 * t + 0];
@@ -150,37 +190,61 @@ void buildMassMatrix(CSRMatrix &M)
         Vec3 AB = B - A;
         Vec3 AC = C - A;
 
-        // 局部质量矩阵，9个元素，其中只有2个不同的值, 第一个值为对角线元素，第二个值为非对角线元素
+        // 计算局部质量矩阵，2个唯一的元素
         double Mloc[2];
         massLoc(AB, AC, Mloc);
 
-        std::vector<uint32_t> triangle = {a, b, c};
+        uint32_t triangle[3] = {a, b, c};
 
-        for (uint32_t current_vtx : triangle)
+        // 构建顶点到局部索引的映射
+        auto vertex_to_local_index = build_vertex_to_local_index(a, b, c);
+
+        // 遍历三角形的每一个顶点（对应全局矩阵的行）
+        for (int i = 0; i < 3; ++i)
         {
-            for (uint32_t current_row : triangle)
+            uint32_t current_row = triangle[i];
+            process_mass_matrix_row(M, current_row, i, vertex_to_local_index, Mloc);
+        }
+    }
+}
+
+// 获取 Sloc 的索引函数
+int get_Sloc_index(int i, int j)
+{
+    if (i == j)
+        return i; // 对角线元素 Sloc[0], Sloc[1], Sloc[2]
+    else if ((i == 0 && j == 1) || (i == 1 && j == 0))
+        return 3; // Sloc[3]
+    else if ((i == 0 && j == 2) || (i == 2 && j == 0))
+        return 4; // Sloc[4]
+    else if ((i == 1 && j == 2) || (i == 2 && j == 1))
+        return 5; // Sloc[5]
+    else
+        return -1; // 不可能的情况
+}
+
+// 处理矩阵行的函数
+void process_matrix_row(CSRMatrix &S, uint32_t current_row, int i, const uint32_t triangle[3],
+                        const std::unordered_map<uint32_t, int> &vertex_to_local_index, const double Sloc[6])
+{
+    size_t offset = S.row_offset[current_row];
+    size_t len = S.row_offset[current_row + 1] - offset;
+
+    for (size_t idx = 0; idx < len; ++idx)
+    {
+        uint32_t col = S.elm_idx[offset + idx];
+
+        // 检查列是否在当前三角形的顶点中
+        auto it = vertex_to_local_index.find(col);
+        if (it != vertex_to_local_index.end())
+        {
+            int j = it->second;
+            int Sloc_index = get_Sloc_index(i, j);
+
+            if (Sloc_index != -1)
             {
-                offset = M.row_offset[current_row];
-                len = M.row_offset[current_row + 1] - offset;
-                // 找出当前顶点对应的elm_idx是第几个
-                for (idx = 0; idx < len; ++idx)
-                {
-                    if (current_vtx == M.elm_idx[offset + idx])
-                    {
-                        break;
-                    }
-                }
-                // 将对应的elements的值进行更新
-                if (current_row == current_vtx)
-                {
 #pragma omp atomic
-                    M.elements[offset + idx] += Mloc[0];
-                }
-                else
-                {
-#pragma omp atomic
-                    M.elements[offset + idx] += Mloc[1];
-                }
+                S.elements[offset + idx] += Sloc[Sloc_index];
             }
         }
     }
@@ -189,11 +253,8 @@ void buildMassMatrix(CSRMatrix &M)
 void buildStiffnessMatrix(CSRMatrix &S)
 {
     Mesh &mesh = S.mesh;
-    size_t idx;
-    size_t offset;
-    int len;
-    int diag;
-#pragma omp parallel for shared(S) private(offset, len, idx, diag)
+
+#pragma omp parallel for
     for (size_t t = 0; t < mesh.triangle_count(); ++t)
     {
         uint32_t a = mesh.indices[3 * t + 0];
@@ -207,49 +268,20 @@ void buildStiffnessMatrix(CSRMatrix &S)
         Vec3 AB = B - A;
         Vec3 AC = C - A;
 
-        // 局部刚度矩阵，9个元素，其中有6个不同的值, 前三个依次为对角线元素，后三个依次为S_AB, S_AC, S_BC
+        // 计算局部刚度矩阵，6个唯一的元素
         double Sloc[6];
         stiffLoc(AB, AC, Sloc);
 
-        diag = 0;
-        std::vector<uint32_t> triangle = {a, b, c};
+        uint32_t triangle[3] = {a, b, c};
 
-        for (uint32_t current_vtx : triangle)
+        // 构建顶点到局部索引的映射
+        auto vertex_to_local_index = build_vertex_to_local_index(a, b, c);
+
+        // 遍历三角形的每一个顶点（对应全局矩阵的行）
+        for (int i = 0; i < 3; ++i)
         {
-            for (uint32_t current_row : triangle)
-            {
-                offset = S.row_offset[current_row];
-                len = S.row_offset[current_row + 1] - offset;
-                // 找出当前顶点对应的elm_idx是第几个
-                for (idx = 0; idx < len; ++idx)
-                {
-                    if (current_vtx == S.elm_idx[offset + idx])
-                    {
-                        break;
-                    }
-                }
-                // 将对应的elements的值进行更新
-                if (current_row == current_vtx)
-                {
-#pragma omp atomic
-                    S.elements[offset + idx] += Sloc[diag++];
-                }
-                else if ((current_row == a || current_vtx == a) && (current_row == b || current_vtx == b))
-                {
-#pragma omp atomic
-                    S.elements[offset + idx] += Sloc[3];
-                }
-                else if ((current_row == a || current_vtx == a) && (current_row == c || current_vtx == c))
-                {
-#pragma omp atomic
-                    S.elements[offset + idx] += Sloc[4];
-                }
-                else if ((current_row == b || current_vtx == b) && (current_row == c || current_vtx == c))
-                {
-#pragma omp atomic
-                    S.elements[offset + idx] += Sloc[5];
-                }
-            }
+            uint32_t current_row = triangle[i];
+            process_matrix_row(S, current_row, i, triangle, vertex_to_local_index, Sloc);
         }
     }
 }
@@ -257,7 +289,7 @@ void buildStiffnessMatrix(CSRMatrix &S)
 void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
 // 将质量矩阵加到刚度矩阵，方便定义和使用统一的MVP
 {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (size_t t = 0; t < S.elements.size; ++t)
     {
         S.elements[t] += M.elements[t];

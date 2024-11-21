@@ -17,6 +17,7 @@ public:
     ~CSRMatrix() = default;
 
     void MVP(const Vec &x, Vec &y) const;
+    void print() const;
 };
 
 void blas_addMatrix(const CSRMatrix &M, double val, const CSRMatrix &S, CSRMatrix &A);

@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <omp.h>
 #include <cstdint>
+#include <iomanip>
 
 CSRMatrix::CSRMatrix(Mesh &m) : Matrix(m.vertex_count(), m.vertex_count()), row_offset(rows + 1, 1), mesh(m)
 {
@@ -68,7 +69,7 @@ CSRMatrix::CSRMatrix(Mesh &m) : Matrix(m.vertex_count(), m.vertex_count()), row_
                 offset = row_offset[current_row];
                 len = row_offset[current_row + 1] - offset;
 
-                // 判断是否为第一次出现，若是则按大小顺序插入
+                // 判断是否为第一次出现，若是则插入
                 for (int i = 0; i < len; ++i)
                 {
                     if (elm_idx[offset + i] == current_vtx)
@@ -123,10 +124,49 @@ void CSRMatrix::MVP(const Vec &x, Vec &y) const
 }
 
 void blas_addMatrix(const CSRMatrix &M, double val, const CSRMatrix &S, CSRMatrix &A)
-// 计算A = S + val * M
+// 计算A = val * M + S
 {
-    for (size_t t = 0; t < S.elements.size; ++t)
+    for (size_t t = 0; t < A.elements.size; ++t)
     {
         A.elements[t] = M.elements[t] * val + S.elements[t];
     }
+}
+
+void CSRMatrix::print() const
+{
+    // 保存 std::cout 的当前格式
+    std::ios old_state(nullptr);
+    old_state.copyfmt(std::cout);
+
+    std::cout << "Matrix (" << rows << " x " << cols << "):" << std::endl;
+
+    for (size_t i = 0; i < rows; ++i)
+    {
+        size_t start = row_offset[i];
+        size_t end = row_offset[i + 1];
+
+        // 当前行的列索引和值
+        std::vector<size_t> col_indices(elm_idx.begin() + start, elm_idx.begin() + end);
+        std::vector<double> row_values(elements.begin() + start, elements.begin() + end);
+
+        size_t idx = 0; // col_indices 和 row_values 的索引
+        for (size_t j = 0; j < cols; ++j)
+        {
+            if (idx < col_indices.size() && col_indices[idx] == j)
+            {
+                // 输出非零元素，保留3位小数，宽度为6
+                std::cout << std::fixed << std::setprecision(3) << std::setw(6) << row_values[idx];
+                ++idx;
+            }
+            else
+            {
+                // 输出零元素，保留3位小数，宽度为6
+                std::cout << std::fixed << std::setprecision(3) << std::setw(6) << 0.0;
+            }
+        }
+        std::cout << std::endl;
+    }
+
+    // 恢复 std::cout 的原始格式
+    std::cout.copyfmt(old_state);
 }

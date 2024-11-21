@@ -2,7 +2,7 @@
 #include <TArray.h>
 #include <Mesh.h>
 #include <cstdint>
-
+#include <iomanip>
 
 void MVP_P1_Mass(const FEMatrix &M, const Vec &x, Vec &y)
 {
@@ -76,4 +76,63 @@ void FEMatrix::MVP(const Vec &x, Vec &y) const
     default:
         break;
     }
+}
+
+void FEMatrix::print() const
+{
+    // 保存 std::cout 的当前格式
+    std::ios old_state(nullptr);
+    old_state.copyfmt(std::cout);
+
+    size_t n = m.vertex_count();
+    std::vector<std::vector<double>> dense_matrix(n, std::vector<double>(n, 0.0));
+
+    // 填充对角线元素
+    for (size_t i = 0; i < diag.size; ++i)
+    {
+        dense_matrix[i][i] = diag[i];
+    }
+
+    // 填充非对角线元素
+    for (size_t t = 0; t < m.triangle_count(); ++t)
+    {
+        uint32_t a = m.indices[3 * t + 0];
+        uint32_t b = m.indices[3 * t + 1];
+        uint32_t c = m.indices[3 * t + 2];
+
+        if (femtype == P1_Mass)
+        {
+            double val = offdiag[t];
+            dense_matrix[a][b] += val;
+            dense_matrix[a][c] += val;
+            dense_matrix[b][a] += val;
+            dense_matrix[b][c] += val;
+            dense_matrix[c][a] += val;
+            dense_matrix[c][b] += val;
+        }
+        else if (femtype == P1_Stiffness)
+        {
+            dense_matrix[a][b] += offdiag[3 * t + 0];
+            dense_matrix[a][c] += offdiag[3 * t + 1];
+            dense_matrix[b][c] += offdiag[3 * t + 2];
+
+            // 对称矩阵，填充反向项
+            dense_matrix[b][a] += offdiag[3 * t + 0];
+            dense_matrix[c][a] += offdiag[3 * t + 1];
+            dense_matrix[c][b] += offdiag[3 * t + 2];
+        }
+    }
+
+    // 输出稠密矩阵
+    std::cout << "Dense Matrix (" << n << " x " << n << "):" << std::endl;
+    for (size_t i = 0; i < n; ++i)
+    {
+        for (size_t j = 0; j < n; ++j)
+        {
+            std::cout << std::fixed << std::setprecision(3) << std::setw(6) << dense_matrix[i][j];
+        }
+        std::cout << std::endl;
+    }
+    // 恢复 std::cout 的原始格式
+    std::cout.copyfmt(old_state);
 }

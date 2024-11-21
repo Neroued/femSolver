@@ -483,7 +483,7 @@ void Viewer::runNS(double dt, double nu)
         }
 
         // 通过旋转计算相机位置
-        float radius = 4.5f; // 距离目标点的半径
+        float radius = 4.0f; // 距离目标点的半径
         float camX = radius * cos(glm::radians(rotationX)) * cos(glm::radians(rotationY));
         float camY = -radius * sin(glm::radians(rotationY));
         float camZ = radius * sin(glm::radians(rotationX)) * cos(glm::radians(rotationY));

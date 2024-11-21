@@ -121,14 +121,14 @@ inline bool TVec3<T>::operator==(const TVec3<T> &a) const
 template <>
 inline bool TVec3<float>::operator==(const TVec3<float> &a) const
 {
-	constexpr float epslion = 1e-6;
+	constexpr float epslion = 1e-8;
 	return (std::fabs(x - a.x) < epslion && std::fabs(y - a.y) < epslion && std::fabs(z - a.z) < epslion);
 }
 
 template <>
 inline bool TVec3<double>::operator==(const TVec3<double> &a) const
 {
-	constexpr double epslion = 1e-10;
+	constexpr double epslion = 1e-12;
 	return (std::fabs(x - a.x) < epslion && std::fabs(y - a.y) < epslion && std::fabs(z - a.z) < epslion);
 }
 
@@ -263,19 +263,4 @@ std::ostream &operator<<(std::ostream &os, const TVec3<T> &arr)
 	}
 	os << "]";
 	return os;
-}
-
-namespace std
-{
-	template <typename T>
-	struct hash<TVec3<T>>
-	{
-		std::size_t operator()(const TVec3<T> &vec) const
-		{
-			std::size_t hx = std::hash<T>()(std::round(vec.x * 1000) / 1000); // 处理小数位
-			std::size_t hy = std::hash<T>()(std::round(vec.y * 1000) / 1000);
-			std::size_t hz = std::hash<T>()(std::round(vec.z * 1000) / 1000);
-			return hx ^ (hy << 1) ^ (hz << 2);
-		}
-	};
 }
