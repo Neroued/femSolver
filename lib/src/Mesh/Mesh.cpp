@@ -2,8 +2,8 @@
 #include <TArray.h>
 #include <vec3.h>
 #include <cstdint>
-#include <timer.h>
-#include <iostream>
+// #include <timer.h>
+// #include <iostream>
 #include <unordered_map>
 
 /* 生成立方体网格, 中心为原点，边长为2
@@ -18,8 +18,8 @@ int load_cube(Mesh &m, const int subdiv)
 {
     m.meshtype = CUBE;
     m.subdiv = subdiv;
-    Timer timer;
-    timer.start();
+    // Timer timer;
+    // timer.start();
 
     int n = subdiv + 1;
 
@@ -28,7 +28,6 @@ int load_cube(Mesh &m, const int subdiv)
         int axis; // 0:x, 1:y, 2:z
         int dir;  // 0:负方向, 1:正方向
     };
-
 
     std::vector<Face> faces = {{0, 0},
                                {1, 0},
@@ -108,12 +107,12 @@ int load_cube(Mesh &m, const int subdiv)
             }
         }
     }
-    timer.stop();
+    // timer.stop();
 
-    std::cout << "生成网格用时: " << timer.elapsedMilliseconds() << "ms\n";
+    // std::cout << "生成网格用时: " << timer.elapsedMilliseconds() << "ms\n";
 
-    timer.start();
-    // 生成三角形
+    // timer.start();
+    //  生成三角形
     m.indices.resize(36 * subdiv * subdiv); // 共计12n^2个三角形, 36n^2个顶点
 
     t = 0;
@@ -147,9 +146,9 @@ int load_cube(Mesh &m, const int subdiv)
     }
 
     delete[] dupToNoDupIndex;
-    timer.stop();
+    // timer.stop();
 
-    std::cout << "生成三角形用时: " << timer.elapsedMilliseconds() << "ms\n";
+    // std::cout << "生成三角形用时: " << timer.elapsedMilliseconds() << "ms\n";
 
     return 0;
 }
@@ -159,14 +158,14 @@ int load_sphere(Mesh &m, int subdiv)
     load_cube(m, subdiv);
     m.meshtype = SPHERE;
 
-    Timer t;
-    t.start();
+    // Timer t;
+    // t.start();
     for (size_t i = 0; i < m.vertex_count(); ++i)
     {
         m.vertices[i] = normalized(m.vertices[i]);
     }
-    t.stop();
-    std::cout << "生成球面用时: " << t.elapsedMilliseconds() << "ms" << std::endl;
+    // t.stop();
+    // std::cout << "生成球面用时: " << t.elapsedMilliseconds() << "ms" << std::endl;
     return 0;
 }
 
