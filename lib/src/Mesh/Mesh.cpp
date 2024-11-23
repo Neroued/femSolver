@@ -16,6 +16,8 @@
 
 int load_cube(Mesh &m, const int subdiv)
 {
+    m.meshtype = CUBE;
+    m.subdiv = subdiv;
     Timer timer;
     timer.start();
 
@@ -155,6 +157,7 @@ int load_cube(Mesh &m, const int subdiv)
 int load_sphere(Mesh &m, int subdiv)
 {
     load_cube(m, subdiv);
+    m.meshtype = SPHERE;
 
     Timer t;
     t.start();
