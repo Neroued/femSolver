@@ -67,12 +67,10 @@ int main(int argc, char *argv[])
     {
         Solver.Omega[i] = test_f(Solver.mesh.vertices[i], 0.5, 1.5);
     }
-    Solver.setZeroMean(Solver.Omega);
-    std::cout << Solver.Omega.sum() << std::endl;
     int iter;
     double dt = 0.005;
-    double nu = 1e-4;
-    Viewer viewer(1000, 800, "NS Solver");
+    double nu = pow(10, -1.5);
+    Viewer viewer(1600, 1200, "NS Solver");
     viewer.setupNS(Solver);
     viewer.runNS(dt, nu);
 

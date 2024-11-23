@@ -25,21 +25,22 @@ void NavierStokesSolver::computeStream(int *iter)
     double rel_error;
     int iterMax = 10000;
     Psi.setAll(0.0);
+    setZeroMean(MOmega);
     conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
 }
 
 void NavierStokesSolver::setZeroMean(Vec &x)
+// 对MOmega进行zeromean操作，避免MOmega在ker(S)中
 {
-    M.MVP(x, p);
-    double s = p.sum();
+    double mean = x.sum() / (double)x.size;
+
     for (size_t t = 0; t < x.size; ++t)
     {
-        x[t] -= s / vol;
+        x[t] -= mean;
     }
 }
 
 void NavierStokesSolver::computeTransport()
-// 看不懂怎么算，问老师
 {
     T.setAll(0.0);
 
@@ -57,7 +58,7 @@ void NavierStokesSolver::computeTransport()
 
     for (size_t t = 0; t < T.size; ++t)
     {
-        T[t] *= 1.0 / 12;
+        T[t] *= 1.0 / 6;
     }
 }
 
