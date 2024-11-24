@@ -5,9 +5,11 @@ target_sources(Lib PRIVATE src/linalg/fem.cpp
     src/Matrix/CSRMatrix.cpp
     src/Matrix/FEMatrix.cpp
     src/Matrix/COOMatrix.cpp
+    src/Matrix/diagMatrix.cpp
     src/Mesh/Mesh.cpp
     src/utils/FEMdata.cpp
-    src/utils/NavierStokesSolver.cpp)
+    src/utils/NavierStokesSolver.cpp
+    src/utils/MultiGrid.cpp)
 
 target_include_directories(Lib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/linalg>
@@ -21,5 +23,5 @@ target_include_directories(Lib PUBLIC
 )
 
 find_package(OpenMP REQUIRED)
-target_compile_options(Lib PRIVATE -O3 -ffast-math -fopenmp)
+target_compile_options(Lib PRIVATE -ffast-math -fopenmp -O3)
 

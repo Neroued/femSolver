@@ -9,7 +9,7 @@
 #include <timer.h>
 
 NavierStokesSolver::NavierStokesSolver(int subdiv, MeshType meshtype)
-    : mesh(subdiv, meshtype), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0)
+    : mesh(subdiv, meshtype, true), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0)//, multigrid(mesh, buildStiffnessMatrix)
 {
     t = 0;
     tol = 1e-6;
@@ -22,10 +22,12 @@ void NavierStokesSolver::computeStream(int *iter)
 {
     M.MVP(Omega, MOmega);
     MOmega.scaleInPlace(-1.0);
+    setZeroMean(MOmega);
+    Psi.setAll(0.0);
+    // multigrid.solve(MOmega, Psi);
     double rel_error;
     int iterMax = 10000;
     Psi.setAll(0.0);
-    setZeroMean(MOmega);
     conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
 }
 
@@ -64,7 +66,7 @@ void NavierStokesSolver::computeTransport()
 
 void NavierStokesSolver::timeStep(double dt, double nu)
 {
-    int iter1, iter2;
+    int iter1 = 0, iter2;
     double rel_error;
     Timer timer;
     timer.start();

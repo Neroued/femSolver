@@ -5,6 +5,7 @@
 #include <CSRMatrix.h>
 #include <Mesh.h>
 #include <vector>
+#include <diagMatrix.h>
 
 static void massLoc(const Vec3 &AB, const Vec3 &AC, double *Mloc);  // 根据输入两个向量代表的三角形计算局部质量矩阵
 static void stiffLoc(const Vec3 &AB, const Vec3 &AC, double *Sloc); // 同上，计算刚度矩阵
@@ -293,5 +294,30 @@ void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
     for (size_t t = 0; t < S.elements.size; ++t)
     {
         S.elements[t] += M.elements[t];
+    }
+}
+
+void buildDiagMatrix(const CSRMatrix &M, diagMatrix &D)
+{
+    int offset;
+    int len;
+    int i;
+    for (int r = 0; r < M.rows; ++r)
+    {
+        offset = M.row_offset[r];
+        len = M.row_offset[r + 1] - offset;
+        i = 0;
+        while (i < len && M.elm_idx[offset + i] != r)
+        {
+            ++i;
+        }
+        if (i == len)
+        {
+            D.diag[r] = 0;
+        }
+        else
+        {
+            D.diag[r] = M.elements[offset + i];
+        }
     }
 }

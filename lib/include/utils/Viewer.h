@@ -36,6 +36,8 @@ public:
     void runFEMData();
     void setupNS(NavierStokesSolver &Solver);
     void runNS(double dt, double nu);
+    void setupData(const Mesh &mesh, const Vec &data); // 在网格上显示data的数据
+    void runData();
 
     GLFWwindow *window;
     unsigned int VAO, VBO, EBO, CBO; // VAO: 顶点数组对象; VBO: 顶点缓冲对象; CBO: 颜色缓冲对象; EBO: 索引缓冲对象
@@ -551,5 +553,91 @@ static void mouseButtonCallback(GLFWwindow *window, int button, int action, int 
     else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
     {
         viewer->isMousePressed = false;
+    }
+}
+
+void Viewer::setupData(const Mesh &mesh, const Vec &data) // 在网格上显示data的数据
+{
+    currentMesh = &mesh;
+    glGenVertexArrays(1, &VAO);
+    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &CBO);
+    glGenBuffers(1, &EBO);
+
+    glBindVertexArray(VAO);
+
+    // 设置顶点位置
+    const Mesh &meshnow = mesh;
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, meshnow.vertex_count() * sizeof(Vec3), meshnow.vertices.data, GL_STATIC_DRAW);
+
+    /* glVertexAttribPointer： 配置 VAO 中的位置数据的解析方式。
+    参数：
+    0： 顶点属性索引（Location 0，对应顶点着色器中的位置属性）。
+    3： 每个顶点包含 3 个分量（x, y, z）。
+    GL_DOUBLE： 数据类型为 double。
+    GL_FALSE： 不需要归一化。
+    sizeof(Vec3)： 每个顶点的步长（即每个顶点数据的总大小）。
+    (void*)0： 顶点数据的起始偏移量，从缓冲区的起始位置开始。
+    glEnableVertexAttribArray(0)： 启用顶点属性 Location 0。*/
+    glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), (void *)0);
+    glEnableVertexAttribArray(0);
+
+    // 生成颜色数据
+    std::vector<Vec3> colors = generateColors(data);
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(Vec3), colors.data(), GL_STATIC_DRAW);
+
+    glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, sizeof(Vec3), (void *)0);
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, meshnow.triangle_count() * 3 * sizeof(uint32_t),
+                 meshnow.indices.data, GL_STATIC_DRAW);
+}
+void Viewer::runData()
+{
+    while (!glfwWindowShouldClose(window))
+    {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+
+        // 通过旋转计算相机位置
+        float radius = 4.5f; // 距离目标点的半径
+        float camX = radius * cos(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+        float camY = -radius * sin(glm::radians(rotationY));
+        float camZ = radius * sin(glm::radians(rotationX)) * cos(glm::radians(rotationY));
+
+        cameraPos = glm::vec3(camX, camY, camZ);
+        glm::mat4 view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+        glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, 0.1f, 100.0f);
+
+        // 获取 Uniform 变量位置
+        int modelLoc = glGetUniformLocation(shaderProgram, "model");
+        int viewLoc = glGetUniformLocation(shaderProgram, "view");
+        int projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+        int isEdgeModeLoc = glGetUniformLocation(shaderProgram, "isEdgeMode");
+        int isFEMDataLoc = glGetUniformLocation(shaderProgram, "isFEMData");
+
+        // 向着色器传递矩阵
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniform1i(isEdgeModeLoc, GL_FALSE);
+        glUniform1i(isFEMDataLoc, GL_TRUE);
+
+        // **绘制三角形面**
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // 填充模式
+        glBindVertexArray(VAO);
+        glDrawElements(GL_TRIANGLES, currentMesh->triangle_count() * 3, GL_UNSIGNED_INT, 0);
+
+        // 解绑 VAO
+        glBindVertexArray(0);
+
+        // 交换缓冲区并处理事件
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 }

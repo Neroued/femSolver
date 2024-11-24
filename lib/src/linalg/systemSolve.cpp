@@ -118,10 +118,10 @@ bool conjugateGradientSolve(Matrix &A, Vec &B, Vec &u, Vec &r, Vec &p, Vec &Ap, 
 
     if ((*iter) >= iterMax && *rel_error >= tol)
     {
-        std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
+        //std::cerr << "Error: Solution did not converge within the maximum number of iterations." << std::endl;
         return false;
     }
-    else
+    else 
     {
         // std::cout << "conjugateGradient: Converge in " << *iter << " iters" << std::endl;
         return true;

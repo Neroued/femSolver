@@ -2,12 +2,8 @@
 
 #include <Mesh.h>
 #include <TArray.h>
-#include <vec3.h>
 #include <CSRMatrix.h>
-#include <fem.h>
-#include <systemSolve.h>
-#include <iostream>
-#include <timer.h>
+#include <MultiGrid.h>
 
 class NavierStokesSolver
 /* 求解 NS 方程: (M + dt * nu * S) * Omega^{t+dt} = dt * M * Omega^t + dt * T(Omega^t, Psi^t)
@@ -33,6 +29,8 @@ public:
     double t; // 时间
     double tol;
     double vol;
+
+    // MultiGrid multigrid;
 
     NavierStokesSolver(int subdiv, MeshType meshtype);
     ~NavierStokesSolver() = default;

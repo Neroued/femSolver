@@ -52,6 +52,7 @@ set(TEST_TARGETS
     test_CSR
     test_NS
     test
+    test_MG
 )
 
 foreach(target ${TEST_TARGETS})
@@ -65,4 +66,5 @@ target_compile_options(test_femdata PRIVATE -O3 -ffast-math)
 target_compile_options(test_CSR PRIVATE -O3 -ffast-math -fopenmp)
 target_compile_options(test_NS PRIVATE -O3 -ffast-math -fopenmp)
 target_compile_options(test PRIVATE -O3 -ffast-math -fopenmp)
+target_compile_options(test_MG PRIVATE -O3 -ffast-math -fopenmp)
 
