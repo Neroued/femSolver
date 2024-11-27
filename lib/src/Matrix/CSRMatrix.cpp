@@ -10,7 +10,8 @@
 #include <cstdint>
 #include <iomanip>
 
-CSRMatrix::CSRMatrix(Mesh &m) : Matrix(m.vertex_count(), m.vertex_count()), row_offset(rows + 1, 1), mesh(m)
+CSRMatrix::CSRMatrix(Mesh &m)
+    : Matrix(m.vertex_count(), m.vertex_count()), row_offset(rows + 1, 1)
 {
     /* 统计每个顶点对应的非零元素数量，然后初始化elements, row_offset 和 elm_idx
      * 根据构建网格的特征

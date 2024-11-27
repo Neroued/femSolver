@@ -11,8 +11,8 @@ public:
     Vec elements;
     TArray<size_t> row_offset;
     TArray<size_t> elm_idx;
-    Mesh &mesh;
 
+    CSRMatrix(int r);
     CSRMatrix(Mesh &m); // 根据Mesh中每个顶点之间的连通性建立
     ~CSRMatrix() = default;
 

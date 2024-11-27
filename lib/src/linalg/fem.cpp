@@ -2,7 +2,7 @@
 #include <vec3.h>
 #include <TArray.h>
 #include <FEMatrix.h>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <Mesh.h>
 #include <vector>
 #include <diagMatrix.h>
@@ -149,7 +149,7 @@ std::unordered_map<uint32_t, int> build_vertex_to_local_index(uint32_t a, uint32
 }
 
 // 处理矩阵行的函数
-void process_mass_matrix_row(CSRMatrix &M, uint32_t current_row, int i,
+void process_mass_matrix_row(NSMatrix &M, uint32_t current_row, int i,
                              const std::unordered_map<uint32_t, int> &vertex_to_local_index,
                              const double Mloc[2])
 {
@@ -173,7 +173,7 @@ void process_mass_matrix_row(CSRMatrix &M, uint32_t current_row, int i,
     }
 }
 
-void buildMassMatrix(CSRMatrix &M)
+void buildMassMatrix(NSMatrix &M)
 {
     Mesh &mesh = M.mesh;
 
@@ -225,7 +225,7 @@ int get_Sloc_index(int i, int j)
 }
 
 // 处理矩阵行的函数
-void process_matrix_row(CSRMatrix &S, uint32_t current_row, int i, const uint32_t triangle[3],
+void process_matrix_row(NSMatrix &S, uint32_t current_row, int i, const uint32_t triangle[3],
                         const std::unordered_map<uint32_t, int> &vertex_to_local_index, const double Sloc[6])
 {
     size_t offset = S.row_offset[current_row];
@@ -251,7 +251,7 @@ void process_matrix_row(CSRMatrix &S, uint32_t current_row, int i, const uint32_
     }
 }
 
-void buildStiffnessMatrix(CSRMatrix &S)
+void buildStiffnessMatrix(NSMatrix &S)
 {
     Mesh &mesh = S.mesh;
 
@@ -287,7 +287,7 @@ void buildStiffnessMatrix(CSRMatrix &S)
     }
 }
 
-void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
+void addMassToStiffness(NSMatrix &S, NSMatrix &M)
 // 将质量矩阵加到刚度矩阵，方便定义和使用统一的MVP
 {
 #pragma omp parallel for
@@ -297,7 +297,7 @@ void addMassToStiffness(CSRMatrix &S, CSRMatrix &M)
     }
 }
 
-void buildDiagMatrix(const CSRMatrix &M, diagMatrix &D)
+void buildDiagMatrix(const NSMatrix &M, diagMatrix &D)
 {
     int offset;
     int len;

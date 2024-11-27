@@ -1,7 +1,7 @@
 #pragma once
 
 #include <TArray.h>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <Mesh.h>
 #include <vec3.h>
 
@@ -10,7 +10,7 @@ class FEMData
 {
 public:
     Mesh mesh;
-    CSRMatrix A;
+    NSMatrix A;
     Vec u;
     Vec B;
 

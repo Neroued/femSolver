@@ -6,7 +6,7 @@
 #include <systemSolve.h>
 #include <timer.h>
 
-MultiGrid::MultiGrid(Mesh &mesh, void funcBuildMatrix(CSRMatrix &M))
+MultiGrid::MultiGrid(Mesh &mesh, void funcBuildMatrix(NSMatrix &M))
     : mt(mesh.meshtype), subdiv(mesh.subdiv), w(0.6),
       m0(mesh), m1(subdiv / 2, mt, true), m2(subdiv / 4, mt, true), m3(subdiv / 8, mt, true),
       A0(m0), A1(m1), A2(m2), A3(m3),
@@ -132,7 +132,7 @@ void MultiGrid::projToFine(Vec &b, Mesh &m0, Vec &b1, Mesh &m1)
     }
 }
 
-void MultiGrid::dumpedJacobi(const CSRMatrix &A, const diagMatrix &D, const Vec &b, Vec &x, Vec &r, int iter = 5)
+void MultiGrid::dumpedJacobi(const NSMatrix &A, const diagMatrix &D, const Vec &b, Vec &x, Vec &r, int iter = 5)
 {
     Vec p(x.size); // 临时空间
 
@@ -145,7 +145,7 @@ void MultiGrid::dumpedJacobi(const CSRMatrix &A, const diagMatrix &D, const Vec 
     }
 }
 
-void MultiGrid::conjugateGraidentSmooth(CSRMatrix &A, Vec &b, Vec &x, int iter = 5)
+void MultiGrid::conjugateGraidentSmooth(NSMatrix &A, Vec &b, Vec &x, int iter = 5)
 {
     int cg_iter;
     double cg_rel_error;

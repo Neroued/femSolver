@@ -2,7 +2,7 @@
 
 #include <Mesh.h>
 #include <TArray.h>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <MultiGrid.h>
 
 class NavierStokesSolver
@@ -18,7 +18,7 @@ class NavierStokesSolver
 {
 public:
     Mesh mesh;
-    CSRMatrix M, S, A;
+    NSMatrix M, S, A;
     Vec Omega;
     Vec MOmega;
     Vec Psi;

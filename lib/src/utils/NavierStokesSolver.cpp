@@ -2,7 +2,7 @@
 #include <Mesh.h>
 #include <TArray.h>
 #include <vec3.h>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <fem.h>
 #include <systemSolve.h>
 #include <iostream>

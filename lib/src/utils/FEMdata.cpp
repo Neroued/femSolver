@@ -1,6 +1,6 @@
 #include <FEMdata.h>
 #include <TArray.h>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <Mesh.h>
 #include <vec3.h>
 #include <fem.h>
@@ -18,7 +18,7 @@ FEMData::FEMData(int subdiv, MeshType meshtype, double (*func)(Vec3 pos))
     }
 
     t.start();
-    CSRMatrix M(mesh);
+    NSMatrix M(mesh);
     buildMassMatrix(M);
     buildStiffnessMatrix(A);
     addMassToStiffness(A, M);

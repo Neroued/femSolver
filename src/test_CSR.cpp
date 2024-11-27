@@ -1,5 +1,5 @@
 #include <iostream>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <Mesh.h>
 #include <fem.h>
 #include <time.h>
@@ -9,7 +9,7 @@
 #include <cmath>
 #include <timer.h>
 
-void printinfo(CSRMatrix &csr);
+void printinfo(NSMatrix &csr);
 
 static double test_f(Vec3 pos)
 {
@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
 
     t.start();
 
-    CSRMatrix M(mesh);
-    CSRMatrix S(mesh);
+    NSMatrix M(mesh);
+    NSMatrix S(mesh);
     t.stop();
     std::cout << "用时1: " << t.elapsedMilliseconds() << "ms" << std::endl;
     t.start();
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     std::cout << "u[n - 1]: " << u[n - 1] << std::endl;
 }
 
-void printinfo(CSRMatrix &csr)
+void printinfo(NSMatrix &csr)
 {
     std::cout << "elements: " << std::endl;
     int i = 0;

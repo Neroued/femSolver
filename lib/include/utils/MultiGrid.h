@@ -1,6 +1,6 @@
 #pragma once
 
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <Mesh.h>
 #include <TArray.h>
 #include <diagMatrix.h>
@@ -27,10 +27,10 @@ public:
     Mesh m2;
     Mesh m3;
 
-    CSRMatrix A0; // 分别对应每个网格上的矩阵
-    CSRMatrix A1;
-    CSRMatrix A2;
-    CSRMatrix A3;
+    NSMatrix A0; // 分别对应每个网格上的矩阵
+    NSMatrix A1;
+    NSMatrix A2;
+    NSMatrix A3;
 
     diagMatrix D0;
 
@@ -39,7 +39,7 @@ public:
     Vec r2;
     Vec r3;
 
-    MultiGrid(Mesh &mesh, void funcBuildMatrix(CSRMatrix &M));
+    MultiGrid(Mesh &mesh, void funcBuildMatrix(NSMatrix &M));
     void solve(Vec &b, Vec &u);
     void setOmega(double val) { w = val; }
 
@@ -48,7 +48,7 @@ public:
 
     void projToCoarse(Vec &b, Mesh &m0, Vec &b1, Mesh &m1);                                                        // 将b从细网格m0映射到粗网格m1上，结果在b1中
     void projToFine(Vec &b, Mesh &m0, Vec &b1, Mesh &m1);                                                          // 将b从粗网格m0映射到细网格m1上
-    void dumpedJacobi(const CSRMatrix &A, const diagMatrix &D, const Vec &b, Vec &x, Vec &r, int iter);            // 重稀疏Jacobi平滑器
-    void conjugateGraidentSmooth(CSRMatrix &A, Vec &b, Vec &x, int iter); // 共轭梯度平滑
+    void dumpedJacobi(const NSMatrix &A, const diagMatrix &D, const Vec &b, Vec &x, Vec &r, int iter);            // 重稀疏Jacobi平滑器
+    void conjugateGraidentSmooth(NSMatrix &A, Vec &b, Vec &x, int iter); // 共轭梯度平滑
     void setZeroMean(Vec &x);
 };

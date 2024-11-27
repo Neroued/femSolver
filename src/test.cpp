@@ -1,5 +1,5 @@
 #include <iostream>
-#include <CSRMatrix.h>
+#include <NSMatrix.h>
 #include <FEMatrix.h>
 #include <Mesh.h>
 #include <fem.h>
@@ -61,14 +61,14 @@ void printStrangeElm(CSRMatrix &S1)
 int main()
 {
     Mesh mesh(2, SPHERE);
-    CSRMatrix M1(mesh);
+    NSMatrix M1(mesh);
     buildMassMatrix(M1);
     M1.print();
     FEMatrix M2(mesh, FEMatrix::P1_Mass);
     buildMassMatrix(M2);
     M2.print();
 
-    CSRMatrix S1(mesh);
+    NSMatrix S1(mesh);
     buildStiffnessMatrix(S1);
     S1.print();
     FEMatrix S2(mesh, FEMatrix::P1_Stiffness);
