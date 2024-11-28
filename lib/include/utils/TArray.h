@@ -6,16 +6,22 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
+#include <initializer_list>
 
 template <typename T>
 class TArray
 {
 public:
     // 构造函数
-    TArray();                       // 无参数的构造函数，生成一个空的TArray
-    TArray(size_t);                 // 生成指定大小的TArray
-    TArray(size_t, T);              // 生成指定大小且内部元素初始化为指定值的TArray
-    TArray(const TArray<T> &other); // 拷贝构造函数,即使用另一个现有的TArray来构造新的TArray
+    TArray();                             // 无参数的构造函数，生成一个空的TArray
+    TArray(size_t);                       // 生成指定大小的TArray
+    TArray(size_t, T);                    // 生成指定大小且内部元素初始化为指定值的TArray
+    TArray(const TArray<T> &other);       // 拷贝构造函数,即使用另一个现有的TArray来构造新的TArray
+    TArray(std::initializer_list<T> init) // 支持{1,2,3}初始化的构造函数
+        : size(init.size()), capacity(init.size()), data(new T[init.size()])
+    {
+        std::copy(init.begin(), init.end(), data);
+    }
 
     // 析构函数，用于在对象生命周期结束时执行清理操作，这里要将data的地址释放
     ~TArray();
@@ -381,7 +387,7 @@ void TArray<T>::push_back(const T &t)
     if (size >= capacity)
     {
         size_t new_capacity = capacity ? 2 * capacity : 1;
-        T *new_data = new T[new_capacity]; 
+        T *new_data = new T[new_capacity];
 
         for (size_t i = 0; i < size; ++i)
         {
