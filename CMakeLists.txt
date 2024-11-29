@@ -15,6 +15,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # 检查 OpenMP 支持
 find_package(OpenMP REQUIRED)
 
+find_package(Eigen3 REQUIRED)
+
 # 添加子目录
 add_subdirectory(lib)               # 子项目 lib
 add_subdirectory(extern/glfw)       # 子项目 glfw
@@ -28,7 +30,7 @@ set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/extern/glm")
 include_directories(${GLM_INCLUDE_DIR})
 
 # 定义公共链接的库
-set(COMMON_LIBRARIES glfw glad GL Lib OpenMP::OpenMP_CXX)
+set(COMMON_LIBRARIES glfw glad GL Lib OpenMP::OpenMP_CXX Eigen3::Eigen)
 
 # 定义公共头文件路径
 set(COMMON_INCLUDE_DIRS 
@@ -53,6 +55,8 @@ set(TEST_TARGETS
     test_NS
     test
     test_MG
+    test_cholesky
+    test_SKR
 )
 
 foreach(target ${TEST_TARGETS})
@@ -67,4 +71,5 @@ target_compile_options(test_CSR PRIVATE -O3 -ffast-math -fopenmp)
 target_compile_options(test_NS PRIVATE -O3 -ffast-math -fopenmp)
 target_compile_options(test PRIVATE -O3 -ffast-math -fopenmp)
 target_compile_options(test_MG PRIVATE -O3 -ffast-math -fopenmp)
+target_compile_options(test_cholesky PRIVATE -O3 -ffast-math -fopenmp)
 
