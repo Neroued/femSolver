@@ -17,4 +17,5 @@ public:
 
     void MVP(const Vec &x, Vec &y) const;
     void convertFromCSR(const CSRMatrix &A); // Convert a CSRMatrix to SKRMatrix
+    void print() const;
 };

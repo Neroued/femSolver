@@ -12,6 +12,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
 
+#include <omp.h>
+
 void ConvertToEigenMatrix(const CSRMatrix &csr_matrix, Eigen::SparseMatrix<double> &eigen_matrix)
 {
     typedef Eigen::Triplet<double> Triplet;
@@ -36,6 +38,7 @@ void ConvertToEigenMatrix(const CSRMatrix &csr_matrix, Eigen::SparseMatrix<doubl
 
 int main()
 {
+    omp_set_num_threads(8);
     // 定义一个 3x3 的正定对称矩阵
     const int matrix_size = 3;
 
@@ -63,22 +66,32 @@ int main()
 
     std::cout << "分解结果矩阵 L:" << std::endl;
     chol.L.print();
+    //  [[ 2.  0.  0.]
+    //   [ 6.  1.  0.]
+    //   [-8.  5.  3.]]
 
-    Vec b = {1, 2, 3};
-    Vec x(3);
+    // Vec b = {1, 2, 3};
+    // Vec x(3);
 
-    chol.solve(b, x);
-    std::cout << "x: " << x << std::endl;
+    // chol.solve(b, x);
+    // std::cout << "x: " << x << std::endl;
 
     Timer t;
-    int subdiv = 200;
+    int subdiv = 50;
     Mesh mesh(subdiv, SPHERE);
     CSRMatrix S(mesh);
-    buildStiffnessMatrix(S, mesh);
-    // t.start();
-    // Cholesky chol2(S);
-    // std::cout << "对于 n = " << S.rows;
-    // t.stop(" 分解用时");
+    buildMassMatrix(S, mesh);
+
+    t.start();
+    Cholesky chol2(S);
+    std::cout << "对于 n = " << S.rows;
+    t.stop(" 分解用时");
+    // subdiv = 40, n = 9602, mytime = 960ms, Eigen = 17ms
+    // subdiv = 50, n = 15002, threads = 1, mytime = 3208ms, Eigen = 33ms
+    // subdiv = 50, n = 15002, threads = 2, mytime = 2034ms, Eigen = 33ms
+    // subdiv = 50, n = 15002, threads = 4, mytime = 1761ms, Eigen = 33ms
+    // subdiv = 50, n = 15002, threads = 8, mytime = 1511ms, Eigen = 33ms
+
     // Vec B(S.rows, 1.0);
     // Vec X(S.rows);
     // t.start();

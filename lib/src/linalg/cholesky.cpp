@@ -8,120 +8,76 @@ static void computeNonDiag(CSRMatrix &A, CSRMatrix &L, int col, Vec &tmp);
 
 /* Compute the Cholesky decomposition of a CSR matrix A
  * A = L * L^T
- * Use Skyling Format to store the matrix L
+ * Use Skyline Format to store the matrix L
  */
-Cholesky::Cholesky(CSRMatrix &A)
-    : L(A)
+Cholesky::Cholesky(CSRMatrix &A_CSR)
+    : L(A_CSR)
 {
-    int n = A.rows;
+    // 将A转换成SKR格式方便计算
+    SKRMatrix A(A_CSR);
+    A.convertFromCSR(A_CSR);
 
-    // Compute the first column
-    int len = A.row_offset[1];
-    L.row_offset[0] = 0;
-    L.row_offset[1] = len;
-
-    L.elm_idx.push_back(0); // 第一列第一个元素必然下标是0
-    L.elements.push_back(std::sqrt(A.elements[0]));
-
-    for (int k = 1; k < len; ++k)
+    // 计算每一行开始元素的下标
+    Vec minElmIdx(L.rows);
+    minElmIdx[0] = 0;
+    for (int row = 1; row < L.rows; ++row)
     {
-        L.elm_idx.push_back(A.elm_idx[k]);
-        L.elements.push_back(A.elements[k] / L.elements[0]);
+        int SKR_start = L.column_offset[row];
+        int SKR_len = L.column_offset[row + 1] - SKR_start;
+        minElmIdx[row] = row - SKR_len + 1;
     }
 
-    Vec tmp(n, 0.0); // Scratch array
-
-    // 处理剩余的列
-    for (int col = 1; col < n; ++col)
+    // 先计算第一列
+    L.elements[0] = std::sqrt(A.elements[0]);
+#pragma omp parallel for
+    for (int row = 1; row < A.rows; ++row)
     {
-        tmp[col] = computeDiag(A, L, col);
-        computeNonDiag(A, L, col, tmp);
-
-        // 将tmp压缩到L中
-        int nnz = 0;
-        for (int idx = col; idx < n; ++idx)
+        if (LIKELY(0 < minElmIdx[row])) // 假如第一列的第row行的元素为零直接跳过
         {
-            if (UNLIKELY(tmp[idx] != 0))
+            continue;
+        }
+        else
+        {
+            L.elements[L.column_offset[row]] = A.elements[L.column_offset[row]] / L.elements[0];
+        }
+    }
+
+    // 处理剩下的列
+    for (int col = 1; col < A.cols; ++col)
+    {
+        int col_start = L.column_offset[col]; // col行开始的下标
+
+        // 计算对角线L[col, col]
+        int len = col - minElmIdx[col] + 1; // 表示在这一行col列之前有多少个需要被计算的元素
+        double sum = 0;
+        for (int i = 0; i < len; ++i)
+        {
+            sum += std::pow(L.elements[col_start + i], 2);
+        }
+        int diagIdx = L.column_offset[col + 1] - 1; // 下一行第一个元素的上一个元素就是这行的对角线元素
+        double diag = std::sqrt(A.elements[diagIdx] - sum);
+        L.elements[diagIdx] = diag;
+
+        // 计算非对角线元素L[k, col], k = col+1, ... , n-1
+        int k_start;
+        int idx;
+#pragma omp parallel for private(len, k_start, idx, sum)
+        for (int k = col + 1; k < L.rows; ++k)
+        {
+            len = col - minElmIdx[k] + 1; // 每一行有不同的len，对于非对角线元素可以是0
+            if (len <= 0)                 // len <= 0, 表示这一行无需计算
             {
-                ++nnz;
-                L.elements.push_back(tmp[idx]);
-                L.elm_idx.push_back(idx);
+                continue;
             }
+
+            sum = 0;
+            k_start = L.column_offset[k]; // k行开始的下标
+            for (int i = 0; i < len; ++i)
+            {
+                sum += L.elements[k_start + i] * L.elements[col_start + i];
+            }
+            idx = L.column_offset[k + 1] - k + col - 1;
+            L.elements[idx] = (A.elements[idx] - sum) / diag;
         }
-        L.row_offset[col + 1] = L.row_offset[col] + nnz;
-        tmp.setAll(0.0);
-    }
-}
-
-// 求解L*L^Tx = b
-void Cholesky::solve(Vec &b, Vec &x)
-{
-    // 先求解L y = b，同样注意这里的L是转置后的
-    Vec y(x.size);
-    y[0] = b[0] / L.elements[0];
-
-    for (int i = 1; i < x.size; ++i)
-    {
-        double sum = 0;
-        for (int k = 0; k < i; ++k)
-        {
-            sum += L(k, i) * y[k];
-        }
-        y[i] = (b[i] - sum) / L(i, i);
-    }
-
-    // 求解L^T x = y
-    int n = x.size;
-    x[n - 1] = y[n - 1] / L.elements[L.elements.size - 1];
-
-    for (int i = n - 2; i >= 0; --i)
-    {
-        double sum = 0;
-        for (int k = n - 1; k > i; --k)
-        {
-            sum += L(i, k) * x[k];
-        }
-        x[i] = (y[i] - sum) / L(i, i);
-    }
-}
-
-// 计算col列的对角元素, 需要注意，这里L存储的是转置后的结果，因此取元素时需要进行转置
-static double computeDiag(CSRMatrix &A, CSRMatrix &L, int col)
-{
-    double sum = 0;
-    int start = 0;
-    for (int k = 0; k < col; ++k)
-    {
-        double num = L.elements[start + col - k];
-        sum += std::pow(num, 2);
-        start = L.row_offset[k + 1];
-    }
-    return std::sqrt(A(col, col) - sum);
-}
-
-/* 通过L L^T = A 计算第col列时，可以将右端L^T的第col列缓存，加速计算
- */
-static void computeNonDiag(CSRMatrix &A, CSRMatrix &L, int col, Vec &tmp)
-{
-    int n = A.rows;
-    Vec rightCol(col + 1);
-    // 先进行缓存
-    int rightStart = 0;
-    for (int k = 0; k <= col; ++k)
-    {
-        rightCol[k] = L.elements[rightStart + col - k];
-        rightStart = L.row_offset[k + 1];
-    }
-
-    for (int i = col + 1; i < n; ++i)
-    {
-        double sum = 0;
-        int leftStart = 0;
-        for (int k = 0; k < col; ++k)
-        {
-            sum += L.elements[leftStart + i - k] * rightCol[k];
-            leftStart = L.row_offset[k + 1];
-        }
-        tmp[i] = (A(i, col) - sum) / tmp[col]; 
     }
 }

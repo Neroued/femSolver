@@ -156,13 +156,13 @@ void CSRMatrix::print() const
             if (idx < col_indices.size() && col_indices[idx] == j)
             {
                 // 输出非零元素，保留3位小数，宽度为6
-                std::cout << std::fixed << std::setprecision(3) << std::setw(6) << row_values[idx];
+                std::cout << std::fixed << std::setprecision(2) << std::setw(6) << row_values[idx];
                 ++idx;
             }
             else
             {
                 // 输出零元素，保留3位小数，宽度为6
-                std::cout << std::fixed << std::setprecision(3) << std::setw(6) << 0.0;
+                std::cout << std::fixed << std::setprecision(2) << std::setw(6) << 0.0;
             }
         }
         std::cout << std::endl;

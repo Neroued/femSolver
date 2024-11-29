@@ -1,6 +1,8 @@
 #include <SKRMatrix.h>
 #include <CSRMatrix.h>
 #include <iostream>
+#include <Mesh.h>
+#include <fem.h>
 
 int main()
 {
@@ -24,8 +26,12 @@ int main()
              -43.0, 98.0        // 第三行
     };
 
-    SKRMatrix B(M);
-    B.convertFromCSR(M);
-    std::cout << B.elements << std::endl;
-    std::cout << B.column_offset << std::endl;
+    Mesh mesh(2, SPHERE);
+    CSRMatrix S(mesh);
+    buildMassMatrix(S, mesh);
+    S.print();
+
+    SKRMatrix B(S);
+    B.convertFromCSR(S);
+    B.print();
 }
