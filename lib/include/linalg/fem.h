@@ -4,6 +4,7 @@
 #include <Mesh.h>
 #include <NSMatrix.h>
 #include <diagMatrix.h>
+#include <CSRMatrix.h>
 
 // 求解- \Delta u + u = f
 
@@ -27,11 +28,14 @@ void addMassToStiffness(FEMatrix &S, FEMatrix &M);
 
 /*-------------------使用CSR矩阵建立质量和刚度矩阵-------------------*/
 void buildMassMatrix(NSMatrix &M);
+void buildMassMatrix(CSRMatrix &M, Mesh &mesh);
 
 void buildStiffnessMatrix(NSMatrix &S);
+void buildStiffnessMatrix(CSRMatrix &S, Mesh &mesh);
 
-void addMassToStiffness(NSMatrix &S, NSMatrix &M);
+void addMassToStiffness(CSRMatrix &S, CSRMatrix &M);
 // 将质量矩阵加到刚度矩阵，方便定义和使用统一的MVP
 
 // 将CSR矩阵M的对角元素存储到D中
-void buildDiagMatrix(const NSMatrix &M, diagMatrix &D);
+void buildDiagMatrix(const CSRMatrix &M, diagMatrix &D);
+

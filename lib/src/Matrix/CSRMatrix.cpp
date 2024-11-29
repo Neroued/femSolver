@@ -171,3 +171,35 @@ void CSRMatrix::print() const
     // 恢复 std::cout 的原始格式
     std::cout.copyfmt(old_state);
 }
+
+// double CSRMatrix::operator()(size_t i, size_t j) const
+// {
+//     size_t start = row_offset[i];
+//     size_t end = row_offset[i + 1];
+//     for (size_t k = start; k < end; ++k)
+//     {
+//         if (elm_idx[k] == j)
+//         {
+//             return elements[k];
+//         }
+//     }
+//     return 0.0;
+// }
+
+double CSRMatrix::operator()(size_t i, size_t j) const
+{
+    size_t start = row_offset[i];
+    size_t end = row_offset[i + 1];
+
+    // 在 `elm_idx` 数组的 [start, end) 区间中查找列索引 j
+    auto it = std::lower_bound(elm_idx.begin() + start, elm_idx.begin() + end, j);
+
+    if (it != elm_idx.begin() + end && *it == j)
+    {
+        size_t index = std::distance(elm_idx.begin(), it);
+        return elements[index];
+    }
+
+    // 如果没找到，返回 0.0
+    return 0.0;
+}
