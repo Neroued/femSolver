@@ -3,7 +3,8 @@
 #include <Mesh.h>
 #include <TArray.h>
 #include <NSMatrix.h>
-#include <MultiGrid.h>
+// #include <MultiGrid.h>
+#include <cholesky.h>
 
 class NavierStokesSolver
 /* 求解 NS 方程: (M + dt * nu * S) * Omega^{t+dt} = dt * M * Omega^t + dt * T(Omega^t, Psi^t)
@@ -30,7 +31,7 @@ public:
     double tol;
     double vol;
 
-    // MultiGrid multigrid;
+    Cholesky cholesky;
 
     NavierStokesSolver(int subdiv, MeshType meshtype);
     ~NavierStokesSolver() = default;

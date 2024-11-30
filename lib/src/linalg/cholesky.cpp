@@ -2,20 +2,16 @@
 #include <TArray.h>
 #include <CSRMatrix.h>
 #include <cmath>
+#include <timer.h>
 
-/* Compute the Cholesky decomposition of a CSR matrix A
- * A = L * L^T
- * Use Skyline Format to store the matrix L
- */
-Cholesky::Cholesky(CSRMatrix &A_CSR)
-    : L(A_CSR)
+Cholesky::Cholesky() : L(), A(), minElmIdx(), isInitialized(false) {}
+
+void Cholesky::attach(CSRMatrix &A_CSR)
 {
-    // 将A转换成SKR格式方便计算
-    SKRMatrix A(A_CSR);
+    L = SKRMatrix(A_CSR);
+    A = SKRMatrix(A_CSR);
     A.convertFromCSR(A_CSR);
-
-    // 计算每一行开始元素的下标
-    TArray<int> minElmIdx(L.rows);
+    minElmIdx.resize(L.rows);
     minElmIdx[0] = 0;
     for (int row = 1; row < L.rows; ++row)
     {
@@ -23,7 +19,22 @@ Cholesky::Cholesky(CSRMatrix &A_CSR)
         int SKR_len = L.column_offset[row + 1] - SKR_start;
         minElmIdx[row] = row - SKR_len + 1;
     }
+}
+void Cholesky::attach(CSRMatrix &A_CSR, double epsilon)
+{
+    attach(A_CSR);
+    for (int row = 0; row < A.rows; ++row)
+    {
+        A.elements[A.column_offset[row + 1] - 1] += epsilon;
+    }
+}
 
+/* Compute the Cholesky decomposition of a CSR matrix A
+ * A = L * L^T
+ * Use Skyline Format to store the matrix L
+ */
+void Cholesky::compute()
+{
     // 先计算第一列
     L.elements[0] = std::sqrt(A.elements[0]);
 #pragma omp parallel for
@@ -92,4 +103,47 @@ Cholesky::Cholesky(CSRMatrix &A_CSR)
             L.elements[idx] = (A.elements[idx] - sum) / diag;
         }
     }
+}
+
+void Cholesky::solve(Vec &b, Vec &x)
+{
+    int n = L.rows;
+    Vec y(n);
+
+    Timer t;
+    t.start();
+    // Solve L y = b
+    for (int row = 0; row < n; ++row)
+    {
+        double diag = L.elements[L.column_offset[row + 1] - 1];
+        double sum = 0.0;
+        int row_start = L.column_offset[row];
+        int len = L.column_offset[row + 1] - row_start;
+        int row_start_idx = row - len + 1;
+        for (int i = 0; i < len - 1; ++i)
+        {
+            sum += y[row_start_idx + i] * L.elements[row_start + i];
+        }
+        y[row] = (b[row] - sum) / diag;
+    }
+    t.stop("第一部分");
+
+    t.start();
+    // Solve L^T x = y
+    for (int row = n - 1; row >= 0; --row)
+    {
+        double diag = L.elements[L.column_offset[row + 1] - 1];
+        double sum = 0;
+        for (int k = row + 1; k < n; ++k)
+        {
+            if (row < minElmIdx[k])
+            {
+                continue;
+            }
+            int diff = row - minElmIdx[k];
+            sum += x[k] * L.elements[L.column_offset[k] + diff];
+        }
+        x[row] = (y[row] - sum) / diag;
+    }
+    t.stop("第二部分");
 }

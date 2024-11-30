@@ -15,6 +15,6 @@ b = np.array([1, 2, 3, 4, 5])
 L = np.linalg.cholesky(A)
 
 # 解方程 Ax = b
-x = np.linalg.solve(L.T, b)
+x = np.linalg.solve(A, b)
 print(L)
-print(x)
+print("x: ", x)

@@ -8,10 +8,14 @@ class Cholesky
 {
 public:
     SKRMatrix L;
+    SKRMatrix A;
+    TArray<int> minElmIdx;
+    bool isInitialized;
 
-    Cholesky(CSRMatrix &A);
-    
+    Cholesky();
+
+    void attach(CSRMatrix &A_CSR);
+    void attach(CSRMatrix &A_CSR, double epsilon);
+    void compute();
     void solve(Vec &b, Vec &x);
-private: 
-    void decomposition();
 };

@@ -9,13 +9,15 @@
 #include <timer.h>
 
 NavierStokesSolver::NavierStokesSolver(int subdiv, MeshType meshtype)
-    : mesh(subdiv, meshtype, true), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0)//, multigrid(mesh, buildStiffnessMatrix)
+    : mesh(subdiv, meshtype, true), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0), cholesky()
 {
     t = 0;
     tol = 1e-6;
     buildMassMatrix(M);
     buildStiffnessMatrix(S);
     vol = M.elements.sum();
+    cholesky.attach(S, 1e-10);
+    cholesky.compute();
 }
 
 void NavierStokesSolver::computeStream(int *iter)
@@ -23,12 +25,12 @@ void NavierStokesSolver::computeStream(int *iter)
     M.MVP(Omega, MOmega);
     MOmega.scaleInPlace(-1.0);
     setZeroMean(MOmega);
-    Psi.setAll(0.0);
-    // multigrid.solve(MOmega, Psi);
-    double rel_error;
-    int iterMax = 10000;
-    Psi.setAll(0.0);
-    conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
+    cholesky.solve(MOmega, Psi);
+
+    // double rel_error;
+    // int iterMax = 10000;
+    // Psi.setAll(0.0);
+    // conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
 }
 
 void NavierStokesSolver::setZeroMean(Vec &x)

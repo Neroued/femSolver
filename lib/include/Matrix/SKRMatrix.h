@@ -12,6 +12,7 @@ public:
     Vec elements;
     TArray<size_t> column_offset;
 
+    SKRMatrix() = default;
     SKRMatrix(int r) : Matrix(r, r) {}
     SKRMatrix(CSRMatrix &A); // Initialize from CSRMatrix for Cholesky
 

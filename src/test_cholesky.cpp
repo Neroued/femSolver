@@ -61,7 +61,9 @@ int main()
     test_1.print();
 
     // 调用 Cholesky 分解函数
-    Cholesky chol1(test_1);
+    Cholesky chol1;
+    chol1.attach(test_1);
+    chol1.compute();
 
     std::cout << "分解结果矩阵 L:" << std::endl;
     chol1.L.print();
@@ -80,7 +82,9 @@ int main()
     std::cout << "原始矩阵 test_2:" << std::endl;
     test_2.print();
 
-    Cholesky chol2(test_2);
+    Cholesky chol2;
+    chol2.attach(test_2);
+    chol2.compute();
 
     std::cout << "分解结果矩阵 L:" << std::endl;
     chol2.L.print();
@@ -96,23 +100,42 @@ int main()
     std::cout << "原始矩阵 test_3:" << std::endl;
     test_3.print();
 
-    Cholesky chol3(test_3);
+    Cholesky chol3;
+    chol3.attach(test_3);
+    chol3.compute();
 
     std::cout << "分解结果矩阵 L:" << std::endl;
     chol3.L.print();
 
-    /*---分析效率---*/
-    omp_set_num_threads(4);
-    Timer t;
-    int subdiv = 200;
-    Mesh mesh(subdiv, SPHERE);
-    CSRMatrix S(mesh);
-    buildMassMatrix(S, mesh);
+    Vec B = {1, 2, 3, 4, 5};
+    Vec x(5);
+    chol3.solve(B,x);
+    std::cout << "x: " << x << std::endl;
 
-    t.start();
-    Cholesky cholT(S);
-    std::cout << "对于 n = " << S.rows;
-    t.stop(" 分解用时");
+    int subdiv = 2;
+    double epsilon = 1e-6;
+    Mesh mesh(subdiv, SPHERE);
+    CSRMatrix test_4(mesh);
+    buildStiffnessMatrix(test_4, mesh);
+
+    // Cholesky chol4(test_4, epsilon);
+    // chol4.compute();
+    // chol4.L.print();
+
+
+
+    // /*---分析效率---*/
+    // omp_set_num_threads(4);
+    // Timer t;
+    // int subdiv = 100;
+    // Mesh mesh(subdiv, SPHERE);
+    // CSRMatrix S(mesh);
+    // buildMassMatrix(S, mesh);
+
+    // t.start();
+    // Cholesky cholT(S);
+    // std::cout << "对于 n = " << S.rows;
+    // t.stop(" 分解用时");
     // subdiv = 40, n = 9602, threads = 4, mytime = 50ms, Eigen = 17ms
 
     // subdiv = 50, n = 15002, threads = 1, mytime = 232ms, Eigen = 33ms
@@ -131,12 +154,12 @@ int main()
     // subdiv = 200, n = 240002, threads = 8, mytime = 27126ms, Eigen = 3315ms
     // subdiv = 200, n = 240002, threads = 16, mytime = 27511ms, Eigen = 3315ms
 
-    Eigen::SparseMatrix<double> eigen_matrix;
-    ConvertToEigenMatrix(S, eigen_matrix);
-    t.start();
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
-    solver.compute(eigen_matrix);
-    t.stop("Eigen分解用时");
+    // Eigen::SparseMatrix<double> eigen_matrix;
+    // ConvertToEigenMatrix(S, eigen_matrix);
+    // t.start();
+    // Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+    // solver.compute(eigen_matrix);
+    // t.stop("Eigen分解用时");
 
     // Vec B(S.rows, 1.0);
     // Vec X(S.rows);
