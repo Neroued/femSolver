@@ -46,6 +46,7 @@ void SKRMatrix::convertFromCSR(const CSRMatrix &A)
 {
     // 把CSR矩阵的下三角部分转换成SKR格式方便计算Cholesky
     // 要求是从A初始化的SKR矩阵
+#pragma omp parallel for
     for (int row = 0; row < rows; ++row)
     {
         int A_start = A.row_offset[row];

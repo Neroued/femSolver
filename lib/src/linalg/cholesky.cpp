@@ -3,9 +3,6 @@
 #include <CSRMatrix.h>
 #include <cmath>
 
-static double computeDiag(CSRMatrix &A, CSRMatrix &L, int col);
-static void computeNonDiag(CSRMatrix &A, CSRMatrix &L, int col, Vec &tmp);
-
 /* Compute the Cholesky decomposition of a CSR matrix A
  * A = L * L^T
  * Use Skyline Format to store the matrix L
@@ -18,7 +15,7 @@ Cholesky::Cholesky(CSRMatrix &A_CSR)
     A.convertFromCSR(A_CSR);
 
     // 计算每一行开始元素的下标
-    Vec minElmIdx(L.rows);
+    TArray<int> minElmIdx(L.rows);
     minElmIdx[0] = 0;
     for (int row = 1; row < L.rows; ++row)
     {
@@ -46,9 +43,10 @@ Cholesky::Cholesky(CSRMatrix &A_CSR)
     for (int col = 1; col < A.cols; ++col)
     {
         int col_start = L.column_offset[col]; // col行开始的下标
+        int col_minElmIdx = minElmIdx[col];
 
         // 计算对角线L[col, col]
-        int len = col - minElmIdx[col] + 1; // 表示在这一行col列之前有多少个需要被计算的元素
+        int len = col - col_minElmIdx + 1; // 表示在这一行col列之前有多少个需要被计算的元素
         double sum = 0;
         for (int i = 0; i < len; ++i)
         {
@@ -59,24 +57,38 @@ Cholesky::Cholesky(CSRMatrix &A_CSR)
         L.elements[diagIdx] = diag;
 
         // 计算非对角线元素L[k, col], k = col+1, ... , n-1
-        int k_start;
-        int idx;
-#pragma omp parallel for private(len, k_start, idx, sum)
+#pragma omp parallel for private(len, sum)
         for (int k = col + 1; k < L.rows; ++k)
         {
-            len = col - minElmIdx[k] + 1; // 每一行有不同的len，对于非对角线元素可以是0
-            if (len <= 0)                 // len <= 0, 表示这一行无需计算
+            int k_minElmIdx = minElmIdx[k];
+            int diff;
+            int flag1, flag2;
+            if (k_minElmIdx > col_minElmIdx)
+            {
+                len = col - k_minElmIdx + 1;
+                diff = k_minElmIdx - col_minElmIdx;
+                flag1 = 0;
+                flag2 = 1;
+            }
+            else
+            {
+                len = col - col_minElmIdx + 1;
+                diff = col_minElmIdx - k_minElmIdx;
+                flag1 = 1;
+                flag2 = 0;
+            }
+            if (len <= 0) // len <= 0, 表示这一行无需计算
             {
                 continue;
             }
 
             sum = 0;
-            k_start = L.column_offset[k]; // k行开始的下标
+            int k_start = L.column_offset[k]; // k行开始的下标
             for (int i = 0; i < len; ++i)
             {
-                sum += L.elements[k_start + i] * L.elements[col_start + i];
+                sum += L.elements[k_start + diff * flag1 + i] * L.elements[col_start + diff * flag2 + i];
             }
-            idx = L.column_offset[k + 1] - k + col - 1;
+            int idx = L.column_offset[k + 1] - k + col - 1;
             L.elements[idx] = (A.elements[idx] - sum) / diag;
         }
     }
