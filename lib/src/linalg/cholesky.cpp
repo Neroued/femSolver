@@ -113,9 +113,11 @@ void Cholesky::solve(Vec &b, Vec &x)
     Timer t;
     t.start();
     // Solve L y = b
+    Vec diag_elements(n); // cache the diag elements for backforward
     for (int row = 0; row < n; ++row)
     {
         double diag = L.elements[L.column_offset[row + 1] - 1];
+        diag_elements[row] = diag;
         double sum = 0.0;
         int row_start = L.column_offset[row];
         int len = L.column_offset[row + 1] - row_start;
@@ -126,24 +128,32 @@ void Cholesky::solve(Vec &b, Vec &x)
         }
         y[row] = (b[row] - sum) / diag;
     }
-    t.stop("第一部分");
+    t.stop("第一部分"); // 19ms
 
     t.start();
-    // Solve L^T x = y
-    for (int row = n - 1; row >= 0; --row)
+    // 利用L直接求解L^T x = y
+    // 将公式写出可以发现
+    // x_{k+1} = (y_k+1 - L_{k+1,n-1} * x_{n-1} - L_{k+1,n-2} * x_{n-2} - ... - L_{k+1,k+2} * x_{k+2})                       / L_{k+1,k+1}
+    // x_k     = (y_k   - L_{k,n-1}   * x_{n-1} - L_{k,n-2}   * x_{n-2} - ... - L_{k,k+2}   * x_{k+2} - L_{k,k+1} * x_{k+1}) / L_{k,k}) / L_{k,k}
+    // 纵向观察, 仅依赖之前计算好了的x，因此可以每次仅更新x的一部分值
+
+    for (int row = 0; row < n; ++row)
     {
-        double diag = L.elements[L.column_offset[row + 1] - 1];
-        double sum = 0;
-        for (int k = row + 1; k < n; ++k)
-        {
-            if (row < minElmIdx[k])
-            {
-                continue;
-            }
-            int diff = row - minElmIdx[k];
-            sum += x[k] * L.elements[L.column_offset[k] + diff];
-        }
-        x[row] = (y[row] - sum) / diag;
+        x[row] = y[row];
     }
-    t.stop("第二部分");
+
+    x[n - 1] /= diag_elements[n - 1];
+    for (int row = n - 1; row >= 1; --row)
+    {
+        int row_start = L.column_offset[row];
+        int len = L.column_offset[row + 1] - row_start;
+        int row_start_idx = row - len + 1;
+        for (int i = 0; i < len - 1; ++i)
+        {
+            x[row_start_idx + i] -= L.elements[row_start + i] * x[row];
+        }
+        x[row - 1] /= diag_elements[row - 1];
+    }
+
+    t.stop("第二部分"); // 800ms
 }

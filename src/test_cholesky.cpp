@@ -112,11 +112,11 @@ int main()
     chol3.solve(B,x);
     std::cout << "x: " << x << std::endl;
 
-    int subdiv = 2;
-    double epsilon = 1e-6;
-    Mesh mesh(subdiv, SPHERE);
-    CSRMatrix test_4(mesh);
-    buildStiffnessMatrix(test_4, mesh);
+    // int subdiv = 2;
+    // double epsilon = 1e-6;
+    // Mesh mesh(subdiv, SPHERE);
+    // CSRMatrix test_4(mesh);
+    // buildStiffnessMatrix(test_4, mesh);
 
     // Cholesky chol4(test_4, epsilon);
     // chol4.compute();
@@ -125,17 +125,22 @@ int main()
 
 
     // /*---分析效率---*/
-    // omp_set_num_threads(4);
+    // omp_set_num_threads(1);
     // Timer t;
-    // int subdiv = 100;
-    // Mesh mesh(subdiv, SPHERE);
-    // CSRMatrix S(mesh);
-    // buildMassMatrix(S, mesh);
+    // subdiv = 100;
+    // Mesh mesh2(subdiv, SPHERE);
+    // CSRMatrix S(mesh2);
+    // buildMassMatrix(S, mesh2);
 
     // t.start();
-    // Cholesky cholT(S);
+    // Cholesky cholT;
+    // cholT.attach(S);
+    // cholT.compute();
+    // std::cout << S.elements.size << std::endl;
+    // std::cout << cholT.L.elements.size << std::endl;
     // std::cout << "对于 n = " << S.rows;
     // t.stop(" 分解用时");
+
     // subdiv = 40, n = 9602, threads = 4, mytime = 50ms, Eigen = 17ms
 
     // subdiv = 50, n = 15002, threads = 1, mytime = 232ms, Eigen = 33ms

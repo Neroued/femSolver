@@ -26,11 +26,14 @@ void NavierStokesSolver::computeStream(int *iter)
     MOmega.scaleInPlace(-1.0);
     setZeroMean(MOmega);
     cholesky.solve(MOmega, Psi);
-
+    
+    // Vec tmpM = MOmega;
+    // Vec tmpPsi = Psi;
     // double rel_error;
     // int iterMax = 10000;
     // Psi.setAll(0.0);
     // conjugateGradientSolve(S, MOmega, Psi, r, p, Ap, &rel_error, iter, tol, iterMax);
+    // std::cout << (Psi - tmpPsi).norm() << std::endl;
 }
 
 void NavierStokesSolver::setZeroMean(Vec &x)
