@@ -22,9 +22,9 @@ static double test_f(const Vec3 &pos, double omega_0 = 1.0, double sigma = 1.0)
     // omega = 100 * z * std::exp(-50 * z * z) * (1 + 0.5 * cos(20 * theta));
 
     // 基于二维高斯分布生成涡量
-    omega = omega_0 * std::exp(-r_squared / (2.0 * sigma * sigma)) * (1.0 + 0.5 * std::cos(10.0 * theta) * z);
+    // omega = omega_0 * std::exp(-r_squared / (2.0 * sigma * sigma)) * (1.0 + 0.5 * std::cos(10.0 * theta) * z);
 
-    //omega = 100 * z *std::exp(-50 * r_squared) * (1.0 + 0.5 * std::cos(20 * theta));
+    omega = 100 * z * std::exp(-50 * r_squared) * (1.0 + 0.5 * std::cos(20 * theta));
     return omega;
 }
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     }
     int iter;
     double dt = 0.005;
-    double nu = pow(10, -1.5);
+    double nu = pow(10, -1);
     Viewer viewer(1600, 1200, "NS Solver");
     viewer.setupNS(Solver);
     viewer.runNS(dt, nu);

@@ -25,17 +25,18 @@ int load_cube(Mesh &m, const int subdiv)
 
     struct Face
     {
-        int axis; // 0:x, 1:y, 2:z
-        int dir;  // 0:负方向, 1:正方向
+        int axis;      // 0:x, 1:y, 2:z
+        int dir;       // 0:负方向, 1:正方向
+        int firstAxis; // 当前面进行编号的坐标轴顺序，以保持三角形的方向性
+        int lastAxis;
     };
 
-    std::vector<Face> faces = {{0, 0},
-                               {1, 0},
-                               {2, 0},
-                               {0, 1},
-                               {1, 1},
-                               {2, 1}};
-    // 96534009
+    std::vector<Face> faces = {{0, 1, 1, 2},
+                               {1, 1, 0, 2},
+                               {0, 0, 1, 2},
+                               {1, 0, 0, 2},
+                               {2, 1, 1, 0},
+                               {2, 0, 1, 0}};
 
     int totalVertices = 6 * n * n;                // 重复顶点有6n^2个
     int uniqueVertices = 6 * subdiv * subdiv + 2; // 不重复的顶点有6 * subdiv^2 + 2个
@@ -58,8 +59,8 @@ int load_cube(Mesh &m, const int subdiv)
         int axis = face.axis;
         int dir = face.dir;
 
-        int idx1 = (axis + 1) % 3;
-        int idx2 = (axis + 2) % 3;
+        int idx1 = face.firstAxis;
+        int idx2 = face.lastAxis;
 
         for (int i = 0; i < n; ++i)
         {
@@ -74,8 +75,8 @@ int load_cube(Mesh &m, const int subdiv)
                 int coords[3] = {0, 0, 0};
                 coords[axis] = dir * subdiv;
 
-                coords[idx1] = i;
-                coords[idx2] = j;
+                coords[idx1] = j; // 此处firstAxis上的先编号
+                coords[idx2] = i;
 
                 /* Hash函数的部分
                  * 将三个坐标映射到int64的范围中作为主键
@@ -90,9 +91,9 @@ int load_cube(Mesh &m, const int subdiv)
                     dupToNoDupIndex[t] = p;
 
                     // 计算顶点的位置
-                    double fx = coords[0] * invSubdiv * 2.0f - 1.0f;
-                    double fy = coords[1] * invSubdiv * 2.0f - 1.0f;
-                    double fz = coords[2] * invSubdiv * 2.0f - 1.0f;
+                    double fx = coords[0] * invSubdiv * 2.0 - 1.0;
+                    double fy = coords[1] * invSubdiv * 2.0 - 1.0;
+                    double fz = coords[2] * invSubdiv * 2.0 - 1.0;
 
                     m.vertices[p] = {fx, fy, fz};
 
@@ -133,12 +134,24 @@ int load_cube(Mesh &m, const int subdiv)
                 int v2 = dupToNoDupIndex[idx2];
                 int v3 = dupToNoDupIndex[idx3];
 
-                m.indices[t++] = v0;
-                m.indices[t++] = v1;
-                m.indices[t++] = v2;
-                m.indices[t++] = v1;
-                m.indices[t++] = v3;
-                m.indices[t++] = v2;
+                if (faceIdx == 1 || faceIdx == 2 || faceIdx == 4)
+                {
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v3;
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v2;
+                    m.indices[t++] = v3;
+                }
+                else
+                {
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v2;
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v3;
+                    m.indices[t++] = v2;
+                }
             }
         }
 
@@ -180,17 +193,18 @@ int load_cube(Mesh &m, const int subdiv, int *dupToNoDupIndex)
 
     struct Face
     {
-        int axis; // 0:x, 1:y, 2:z
-        int dir;  // 0:负方向, 1:正方向
+        int axis;      // 0:x, 1:y, 2:z
+        int dir;       // 0:负方向, 1:正方向
+        int firstAxis; // 当前面进行编号的坐标轴顺序，以保持三角形的方向性
+        int lastAxis;
     };
 
-    std::vector<Face> faces = {{0, 0},
-                               {1, 0},
-                               {2, 0},
-                               {0, 1},
-                               {1, 1},
-                               {2, 1}};
-    // 96534009
+    std::vector<Face> faces = {{0, 1, 1, 2},
+                               {1, 1, 0, 2},
+                               {0, 0, 1, 2},
+                               {1, 0, 0, 2},
+                               {2, 1, 1, 0},
+                               {2, 0, 1, 0}};
 
     int totalVertices = 6 * n * n;                // 重复顶点有6n^2个
     int uniqueVertices = 6 * subdiv * subdiv + 2; // 不重复的顶点有6 * subdiv^2 + 2个
@@ -210,8 +224,8 @@ int load_cube(Mesh &m, const int subdiv, int *dupToNoDupIndex)
         int axis = face.axis;
         int dir = face.dir;
 
-        int idx1 = (axis + 1) % 3;
-        int idx2 = (axis + 2) % 3;
+        int idx1 = face.firstAxis;
+        int idx2 = face.lastAxis;
 
         for (int i = 0; i < n; ++i)
         {
@@ -226,8 +240,8 @@ int load_cube(Mesh &m, const int subdiv, int *dupToNoDupIndex)
                 int coords[3] = {0, 0, 0};
                 coords[axis] = dir * subdiv;
 
-                coords[idx1] = i;
-                coords[idx2] = j;
+                coords[idx1] = j;
+                coords[idx2] = i;
 
                 /* Hash函数的部分
                  * 将三个坐标映射到int64的范围中作为主键
@@ -242,9 +256,9 @@ int load_cube(Mesh &m, const int subdiv, int *dupToNoDupIndex)
                     dupToNoDupIndex[t] = p;
 
                     // 计算顶点的位置
-                    double fx = coords[0] * invSubdiv * 2.0f - 1.0f;
-                    double fy = coords[1] * invSubdiv * 2.0f - 1.0f;
-                    double fz = coords[2] * invSubdiv * 2.0f - 1.0f;
+                    double fx = coords[0] * invSubdiv * 2.0 - 1.0;
+                    double fy = coords[1] * invSubdiv * 2.0 - 1.0;
+                    double fz = coords[2] * invSubdiv * 2.0 - 1.0;
 
                     m.vertices[p] = {fx, fy, fz};
 
@@ -285,12 +299,24 @@ int load_cube(Mesh &m, const int subdiv, int *dupToNoDupIndex)
                 int v2 = dupToNoDupIndex[idx2];
                 int v3 = dupToNoDupIndex[idx3];
 
-                m.indices[t++] = v0;
-                m.indices[t++] = v1;
-                m.indices[t++] = v2;
-                m.indices[t++] = v1;
-                m.indices[t++] = v3;
-                m.indices[t++] = v2;
+                if (faceIdx == 1 || faceIdx == 2 || faceIdx == 4)
+                {
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v3;
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v2;
+                    m.indices[t++] = v3;
+                }
+                else
+                {
+                    m.indices[t++] = v0;
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v2;
+                    m.indices[t++] = v1;
+                    m.indices[t++] = v3;
+                    m.indices[t++] = v2;
+                }
             }
         }
 
@@ -357,7 +383,6 @@ Mesh::Mesh(int subdiv, MeshType meshtype, bool saveDTND)
         else if (meshtype == SPHERE)
         {
             load_sphere(*this, subdiv, dupToNoDupIndex);
-            
         }
     }
 }

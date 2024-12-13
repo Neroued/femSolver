@@ -4,6 +4,9 @@
 #include <Mesh.h>
 #include <fem.h>
 #include <NavierStokesSolver.h>
+#include <unordered_map>
+#include <vec3.h>
+#include <utility>
 
 static double test_f(const Vec3 &pos, double omega_0 = 1.0, double sigma = 1.0)
 {
@@ -58,22 +61,38 @@ void printStrangeElm(CSRMatrix &S1)
     }
 }
 
+struct PairHash
+{
+    std::size_t operator()(const std::pair<uint32_t, uint32_t> &p) const
+    {
+        return std::hash<uint32_t>{}(p.first) ^ (std::hash<uint32_t>{}(p.second) << 1);
+    }
+};
+
+struct PairEqual
+{
+    bool operator()(const std::pair<uint32_t, uint32_t> &p1, const std::pair<uint32_t, uint32_t> &p2) const
+    {
+        return p1.first == p2.first && p1.second == p2.second;
+    }
+};
+
 int main()
 {
-    Mesh mesh(2, SPHERE);
-    NSMatrix M1(mesh);
-    buildMassMatrix(M1);
-    M1.print();
-    FEMatrix M2(mesh, FEMatrix::P1_Mass);
-    buildMassMatrix(M2);
-    M2.print();
+    // Mesh mesh(2, SPHERE);
+    // NSMatrix M1(mesh);
+    // buildMassMatrix(M1);
+    // M1.print();
+    // FEMatrix M2(mesh, FEMatrix::P1_Mass);
+    // buildMassMatrix(M2);
+    // M2.print();
 
-    NSMatrix S1(mesh);
-    buildStiffnessMatrix(S1);
-    S1.print();
-    FEMatrix S2(mesh, FEMatrix::P1_Stiffness);
-    buildStiffnessMatrix(S2);
-    S2.print();
+    // NSMatrix S1(mesh);
+    // buildStiffnessMatrix(S1);
+    // S1.print();
+    // FEMatrix S2(mesh, FEMatrix::P1_Stiffness);
+    // buildStiffnessMatrix(S2);
+    // S2.print();
 
     // printStrangeElm(S1);
 
@@ -115,4 +134,45 @@ int main()
     //     }
     //     std::cout << std::endl;
     // }
+
+    int subdiv = 1;
+    Mesh mesh(subdiv, CUBE);
+
+    std::unordered_map<std::pair<uint32_t, uint32_t>, bool, PairHash, PairEqual> hash;
+
+    for (size_t t = 0; t < mesh.triangle_count(); ++t)
+    {
+        uint32_t a = mesh.indices[3 * t + 0];
+        uint32_t b = mesh.indices[3 * t + 1];
+        uint32_t c = mesh.indices[3 * t + 2];
+
+        std::cout << "triangle: (" << a << ", " << b << ", " << c << ")" << std::endl;
+    }
+
+    for (size_t t = 0; t < mesh.triangle_count(); ++t)
+    {
+        uint32_t a = mesh.indices[3 * t + 0];
+        uint32_t b = mesh.indices[3 * t + 1];
+        uint32_t c = mesh.indices[3 * t + 2];
+
+        std::pair<uint32_t, uint32_t> e1 = {a, b};
+        std::pair<uint32_t, uint32_t> e2 = {b, c};
+        std::pair<uint32_t, uint32_t> e3 = {c, a};
+
+        std::vector<std::pair<uint32_t, uint32_t>> edges = {e1, e2, e3};
+
+        for (auto e : edges)
+        {
+            if (!hash[e])
+            {
+                hash[e] = true;
+            }
+            else
+            {   
+                // std::cout << "edge: (" << e.second << ", " << e.first << "): " << hash[{e.second, e.first}] << std::endl;
+                std::cout << "t = " << t << " edge: (" << e.first << ", " << e.second << ")" << std::endl;
+                std::cout << "triangle: (" << a << ", " << b << ", " << c << ")" << std::endl << std::endl;
+            }
+        }
+    }
 }

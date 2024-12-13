@@ -9,7 +9,8 @@
 #include <timer.h>
 
 NavierStokesSolver::NavierStokesSolver(int subdiv, MeshType meshtype)
-    : mesh(subdiv, meshtype, true), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0), cholesky()
+    : mesh(subdiv, meshtype, true), M(mesh), S(mesh), A(mesh), Omega(M.rows, 0), MOmega(M.rows, 0), Psi(M.rows, 0), T(M.rows, 0), r(M.rows, 0), p(M.rows, 0), Ap(M.rows, 0),
+      cholesky()
 {
     t = 0;
     tol = 1e-6;
@@ -26,7 +27,7 @@ void NavierStokesSolver::computeStream(int *iter)
     MOmega.scaleInPlace(-1.0);
     setZeroMean(MOmega);
     cholesky.solve(MOmega, Psi);
-    
+
     // Vec tmpM = MOmega;
     // Vec tmpPsi = Psi;
     // double rel_error;
@@ -39,12 +40,19 @@ void NavierStokesSolver::computeStream(int *iter)
 void NavierStokesSolver::setZeroMean(Vec &x)
 // 对MOmega进行zeromean操作，避免MOmega在ker(S)中
 {
-    double mean = x.sum() / (double)x.size;
+    // double mean = x.sum() / (double)x.size;
 
-    for (size_t t = 0; t < x.size; ++t)
+    // for (size_t t = 0; t < x.size; ++t)
+    // {
+    //     x[t] -= mean;
+    // }
+    M.MVP(x, Ap);
+    double s = Ap.sum() / vol;
+    for (int i = 0; i < Ap.size; ++i)
     {
-        x[t] -= mean;
+        x[i] -= s;
     }
+
 }
 
 void NavierStokesSolver::computeTransport()
@@ -87,6 +95,6 @@ void NavierStokesSolver::timeStep(double dt, double nu)
     conjugateGradientSolve(A, MOmega, Omega, r, p, Ap, &rel_error, &iter2, tol, 1000);
     setZeroMean(Omega);
     t += dt;
-    std::cout << "Iter 1: " << iter1 << ", Iter2: " << iter2;
-    timer.stop(" time");
+    std::cout << "Iter2: " << iter2;
+    timer.stop(" total time");
 }
