@@ -2,7 +2,7 @@
 #include <TArray.h>
 #include <CSRMatrix.h>
 #include <cmath>
-#include <timer.h>
+// #include <timer.h>
 
 Cholesky::Cholesky() : L(), A(), minElmIdx(), isInitialized(false) {}
 
@@ -110,8 +110,8 @@ void Cholesky::solve(Vec &b, Vec &x)
     int n = L.rows;
     Vec y(n);
 
-    Timer t;
-    t.start();
+    // Timer t;
+    // t.start();
     // Solve L y = b
     Vec diag_elements(n); // cache the diag elements for backforward
     for (int row = 0; row < n; ++row)
@@ -128,9 +128,9 @@ void Cholesky::solve(Vec &b, Vec &x)
         }
         y[row] = (b[row] - sum) / diag;
     }
-    t.stop("第一部分"); // 19ms
+    // t.stop("第一部分"); // 19ms
 
-    t.start();
+    // t.start();
     // 利用L直接求解L^T x = y
     // 将公式写出可以发现
     // x_{k+1} = (y_k+1 - L_{k+1,n-1} * x_{n-1} - L_{k+1,n-2} * x_{n-2} - ... - L_{k+1,k+2} * x_{k+2})                       / L_{k+1,k+1}
@@ -155,5 +155,5 @@ void Cholesky::solve(Vec &b, Vec &x)
         x[row - 1] /= diag_elements[row - 1];
     }
 
-    t.stop("第二部分"); // 800ms
+    // t.stop("第二部分"); // 800ms
 }
